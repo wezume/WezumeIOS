@@ -72,7 +72,7 @@ const LoginScreen = () => {
     try {
       const loginResponse = await axios.post(`${env.baseURL}/api/login`, { email, password });
       const { token, jobOption } = loginResponse.data;
-      
+
       // 1. Log Initial API Response Data
       console.log('✅ Login Success. JobOption received from API:', jobOption);
 
@@ -94,13 +94,13 @@ const LoginScreen = () => {
         videos,
         college,
         profileUrl,
-        jobid, 
+        jobid,
       } = userDetails;
       const videoId = videos?.[0]?.videoId || null;
-      
+
       const role = jobOption
 
-      console.log('➡️ Normalized JobOption for switch logic:',jobOption);
+      console.log('➡️ Normalized JobOption for switch logic:', jobOption);
 
 
       if (role === 'placementdrive' || role === 'academy' || role === 'placement') {
@@ -150,9 +150,9 @@ const LoginScreen = () => {
         ['college', college || ''],
         ['jobOption', jobOption || ''],
         ['profileUrl', profileUrl || ''],
-        ['jobid', jobid ? jobid.toString() : ''], 
+        ['jobid', jobid ? jobid.toString() : ''],
       ];
-      
+
       await AsyncStorage.multiSet(dataToSave);
       console.log('✅ Placement data (including jobid) saved successfully.');
     } catch (error) {

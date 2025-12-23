@@ -11,14 +11,14 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('userToken');
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     console.log('Request Headers:', config.headers); // Add this line
-    console.log('Request URL:', config.url); 
-    
+    console.log('Request URL:', config.url);
+
     return config;
   },
   (error) => {
@@ -33,20 +33,28 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
+    console.log('🔴 API Error Interceptor triggered:', error);
+
+    // Check if error.response exists before accessing its properties
+    if (!error.response) {
+      console.error('❌ Network error or no response:', error.message);
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
-    
+
     // Check if the error is a 401 Unauthorized and we haven't already retried
     if (error.response.status === 401 && !originalRequest._retry) {
       console.log('Token expired or invalid. Logging out.');
-      
+
       // Mark that we've retried this request
-      originalRequest._retry = true; 
-      
+      originalRequest._retry = true;
+
       // Clear all user data from storage
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userId');
       // Add any other keys you want to clear
-      
+
       // This is a simplified navigation. In a real app, you'd use a more robust
       // navigation service that doesn't rely on hooks directly in the interceptor.
       // For now, this alerts the user. A better solution would be to navigate to Login.
