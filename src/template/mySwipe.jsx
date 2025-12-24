@@ -42,6 +42,10 @@ import apiClient from './api';
 
 const { height: windowHeight } = Dimensions.get('window');
 
+// --- Placeholder for BASE_URL (Assumed from previous context) ---
+const BASE_URL = 'https://app.wezume.in'; 
+
+
 // --- Reusable Animated Icon Button Component (Unchanged) ---
 const AnimatedIconButton = ({ onPress, children }) => {
   const scale = useSharedValue(1);
@@ -57,14 +61,14 @@ const AnimatedIconButton = ({ onPress, children }) => {
   );
 };
 
-// --- Main Video Player Component (Refactored) ---
+// --- Main Video Player Component ---
 const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [error, setError] = useState(null);
   const [subtitles, setSubtitles] = useState([]);
   const [currentTime, setCurrentTime] = useState(0);
-  const { id, uri, profileImage, firstName, email, phoneNumber, thumbnail, userId: videoOwnerId } = item;
+  const { id, uri, profileImage, firstName, email, phoneNumber, thumbnail, userId: videoOwnerId } = item; 
   const navigation = useNavigation();
 
   const [likeCount, setLikeCount] = useState(0);
@@ -86,16 +90,14 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
       setSubtitles([]);
 
       const fetchMetadata = async () => {
-        // ✅ FIX: Use Promise.allSettled to ensure all requests complete
         const results = await Promise.allSettled([
           apiClient.get(`/api/videos/${id}/like-count`),
           apiClient.get(`/api/totalscore/${id}`),
-          apiClient.get(`/api/videos/user/${id}/subtitles.srt`) // Corrected endpoint
+          apiClient.get(`/api/videos/user/${id}/subtitles.srt`)
         ]);
 
         const [likeResult, scoreResult, subtitlesResult] = results;
 
-        // Process each result individually
         if (likeResult.status === 'fulfilled') {
           setLikeCount(likeResult.value.data || 0);
         } else {
@@ -151,7 +153,22 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .onStart(() => {
-      // Animation logic is unchanged...
+      // --- FIXED: Heart Animation Logic for Double Tap ---
+      // Determine which heart to animate based on current like status
+      const targetScale = isLiked ? dislikeHeartScale : likeHeartScale;
+      const targetOpacity = isLiked ? dislikeHeartOpacity : likeHeartOpacity;
+
+      targetScale.value = withSpring(1.5, { damping: 10, stiffness: 200 }); // Pop-out effect
+      targetOpacity.value = withTiming(1, { duration: 100 }); // Fade in
+
+      // Fade out and reset after a delay
+      targetOpacity.value = withDelay(
+        300,
+        withTiming(0, { duration: 300 }, () => {
+          targetScale.value = 0; // Reset scale after fade out
+        })
+      );
+      // --- END FIXED ANIMATION LOGIC ---
       runOnJS(handleLikePress)();
     });
 
@@ -164,24 +181,37 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
   const currentSubtitle = subtitles.find(sub => currentTime >= sub.startTime && currentTime <= sub.endTime)?.text || '';
 
   const handleShare = useCallback(async () => {
-    if (!thumbnail) return Alert.alert('Error', 'Thumbnail is not available.');
-
-    const localThumbnailPath = `${RNFS.CachesDirectoryPath}/share_thumbnail_${Date.now()}.jpg`;
-
-    try {
-      await RNFS.downloadFile({ fromUrl: thumbnail, toFile: localThumbnailPath }).promise;
-      await Share.open({
-        title: 'Share User Video',
-        // FIX: Access firstName directly from props
-        message: `Check out this video from ${firstName} on Wezume!`,
-        url: `file://${localThumbnailPath}`,
-      });
-    } catch (error) {
-      if (error.code !== 'ECANCELLED') {
-        Alert.alert('Error', 'Could not share the video.');
-      }
+    if (!thumbnail || !firstName || !uri || !id) {
+        Alert.alert('Error', 'Cannot share video at this time. Missing data.');
+        return;
     }
-  }, [thumbnail, firstName]);
+    
+    try {
+      const thumbnailUrl = thumbnail;
+      const localThumbnailPath = `${RNFS.CachesDirectoryPath}/thumbnail.jpg`;
+      
+      const downloadResult = await RNFS.downloadFile({
+        fromUrl: thumbnailUrl,
+        toFile: localThumbnailPath,
+      }).promise;
+
+      if (downloadResult.statusCode === 200) {
+        const shareOptions = {
+          title: 'Share User Video',
+          message: `Check out this video shared by ${firstName}\n\n${BASE_URL}/api/users/share?target=app://api/videos/user/${uri}/${id}`,
+          url: `file://${localThumbnailPath}`,
+        };
+
+        await Share.open(shareOptions);
+      } else {
+        console.error('Failed to download the thumbnail. Status code:', downloadResult.statusCode);
+        Alert.alert('Error', 'Unable to download the thumbnail for sharing.');
+      }
+    } catch (error) {
+      console.error('Error sharing video:', error);
+      Alert.alert('Error', 'Error occurred during sharing.');
+    }
+  }, [thumbnail, firstName, uri, id]); 
 
   const handleCall = () => {
     if (phoneNumber) {
@@ -242,7 +272,6 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
             onError={handleVideoError}
             poster={thumbnail}
             posterResizeMode="cover"
-          // Buffer config is unchanged
           />
         ) : (
           <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -283,19 +312,9 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
                 <Like name={'heart'} size={30} color={isLiked ? '#FF005E' : '#fff'} />
                 <Text style={styles.iconText}>{likeCount}</Text>
               </AnimatedIconButton>
-              {/* <AnimatedIconButton onPress={() => navigation.navigate('ScoringScreen', { videoId: id, userId: videoOwnerId })}>
-                  <Score name={'speedometer'} size={30} color={'#fff'} />
-                  <Text style={styles.iconText}>{totalScore}</Text>
-                </AnimatedIconButton> */}
               <AnimatedIconButton onPress={handleShare}>
                 <Shares name={'share'} size={30} color={'#fff'} />
               </AnimatedIconButton>
-              {/* <AnimatedIconButton onPress={handleCall}>
-                  <Phone name={'phone-volume'} size={22} color={'#fff'} />
-                </AnimatedIconButton>
-                <AnimatedIconButton onPress={handleEmail}>
-                  <Whatsapp name={'email'} size={27} color={'#fff'} />
-                </AnimatedIconButton> */}
             </View>
           </View>
         </LinearGradient>
@@ -304,7 +323,7 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
   );
 });
 
-// --- HomeSwipe Component (Unchanged) ---
+// --- HomeSwipe Component (Container) ---
 const HomeSwipe = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -366,7 +385,7 @@ const HomeSwipe = () => {
       item={item}
       isActive={isFocused && index === activeVideoIndex}
       onLike={handleLike}
-      isLiked={!!likedStatus[item.id]}
+      isLiked={!!likedStatus[item.id]} // Pass the boolean liked status
     />
   ), [isFocused, activeVideoIndex, handleLike, likedStatus]);
 
@@ -426,7 +445,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 20,
   },
-  transcriptionContainer: { backgroundColor: 'rgba(0, 0, 0, 0.5)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 10, alignSelf: 'center', marginBottom: '10%' },
+  transcriptionContainer: { backgroundColor: 'rgba(0, 0, 0, 0.5)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 10, alignSelf: 'flex-start', marginBottom: '10%' },
   transcriptionText: { color: '#fff', fontSize: 16, fontWeight: '500' },
   playPauseOverlay: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },
   heartAnimationContainer: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },

@@ -23,12 +23,12 @@ import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 
 // NOTE: Replace './api' with your actual API client setup if necessary.
-import apiClient from './api'; 
+import apiClient from './api';
 
 // --- Mock Environment Variables (Crucial for the share link) ---
 const env = {
   // You MUST replace 'https://yourapi.com' with your app's actual base URL
-  baseURL: 'https://app.wezume.in', 
+  baseURL: 'https://app.wezume.in',
 };
 
 // --- API Service Functions ---
@@ -224,7 +224,7 @@ const Home1 = () => {
   }, [videoId, videoUri, audioUri, handleProfanityDetected]);
 
   // --- Action Handlers (Defined here to fix ReferenceError) ---
-  
+
   const handleDeletePress = useCallback(() => {
     Alert.alert('Delete Video', 'Are you sure?',
       [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: performDelete }]
@@ -237,14 +237,14 @@ const Home1 = () => {
    */
   const handleShare = useCallback(async () => {
     if (!thumbnail || !firstName || !videoUri || !videoId) {
-        Alert.alert('Error', 'Cannot share video at this time. Missing data.');
-        return;
+      Alert.alert('Error', 'Cannot share video at this time. Missing data.');
+      return;
     }
-    
+
     try {
       const thumbnailUrl = thumbnail;
       const localThumbnailPath = `${RNFS.CachesDirectoryPath}/thumbnail.jpg`;
-      
+
       const downloadResult = await RNFS.downloadFile({
         fromUrl: thumbnailUrl,
         toFile: localThumbnailPath,
@@ -273,11 +273,11 @@ const Home1 = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setState(s => ({...s, loading: true}));
+      setState(s => ({ ...s, loading: true }));
       const [
         firstName, userId, roleCode, college, profileUrl
       ] = await AsyncStorage.multiGet(['firstName', 'userId', 'roleCode', 'college', 'profileUrl']);
-      
+
       const storedUserData = {
         firstName: firstName[1],
         userId: userId[1],
@@ -289,11 +289,11 @@ const Home1 = () => {
         setState(s => ({ ...s, loading: false }));
         return;
       }
-      setState(s => ({ 
-        ...s, 
-        userData: storedUserData, 
-        profileImage: profileUrl[1], 
-        loading: false 
+      setState(s => ({
+        ...s,
+        userData: storedUserData,
+        profileImage: profileUrl[1],
+        loading: false
       }));
 
       fetchVideoAndSubtitles(storedUserData.userId);
@@ -311,9 +311,9 @@ const Home1 = () => {
     }
     // Reset the trigger flag when the component loses focus
     return () => {
-        if (!isFocused) {
-            analysisTriggered.current = false;
-        }
+      if (!isFocused) {
+        analysisTriggered.current = false;
+      }
     }
   }, [videoId, videoUri, audioUri, isFocused, runAnalysis]);
 
@@ -353,9 +353,9 @@ const Home1 = () => {
                 videoUri={videoUri}
                 subtitles={subtitles}
               />
-              <ActionButtons 
-                onShare={handleShare} 
-                onDelete={handleDeletePress} 
+              <ActionButtons
+                onShare={handleShare}
+                onDelete={handleDeletePress}
               />
             </>
           ) : (
