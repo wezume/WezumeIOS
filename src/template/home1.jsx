@@ -10,6 +10,7 @@ import {
   BackHandler,
   Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
@@ -131,32 +132,32 @@ const Home1 = () => {
     subtitles: [],
   });
 
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(true);
+  const demoShownRef = useRef(false);
+
   const { loading, hasVideo, videoUri, audioUri, videoId, thumbnail, profileImage, userData, subtitles } = state;
   const userId = userData?.userId;
   const firstName = userData?.firstName;
   const analysisTriggered = useRef(false);
 
-  // --- Utility Functions/Callbacks ---
-
-  const parseSRT = (srtText) => {
-    if (!srtText || typeof srtText !== 'string') return [];
-    const subtitleBlocks = srtText.trim().replace(/\r/g, '').split('\n\n');
-    return subtitleBlocks.map(block => {
-      const lines = block.split('\n');
-      if (lines.length < 2) return null;
-      const timeString = lines[1];
-      const text = lines.slice(2).join(' ');
-      const timeParts = timeString.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})/);
-      if (!timeParts) return null;
-      const startTime = parseInt(timeParts[1]) * 3600 + parseInt(timeParts[2]) * 60 + parseInt(timeParts[3]) + parseInt(timeParts[4]) / 1000;
-      const endTime = parseInt(timeParts[5]) * 3600 + parseInt(timeParts[6]) * 60 + parseInt(timeParts[7]) + parseInt(timeParts[8]) / 1000;
-      return { startTime, endTime, text };
-    }).filter(Boolean);
-  };
-
+  /* 
+     UseCallback for fetching video to prevent recreation.
+     Modified to allow awaiting it in loadData.
+  */
   const fetchVideoAndSubtitles = useCallback(async (currentUserId) => {
     try {
       const { data: videoData } = await apiService.fetchVideo(currentUserId);
+
+      // Fetch subtitles in parallel if possible, or sequentially
+      let parsedSubtitles = [];
+      try {
+        const { data: subtitlesData } = await apiService.fetchSubtitles(videoData.id);
+        parsedSubtitles = parseSRT(subtitlesData);
+      } catch (subError) {
+        // ignore subtitle error
+      }
+
       setState(s => ({
         ...s,
         videoUri: videoData.videoUrl,
@@ -164,16 +165,10 @@ const Home1 = () => {
         videoId: videoData.id,
         thumbnail: videoData.tumbnail,
         hasVideo: true,
+        subtitles: parsedSubtitles,
       }));
-      await AsyncStorage.setItem('cachedVideoData', JSON.stringify(videoData));
 
-      try {
-        const { data: subtitlesData } = await apiService.fetchSubtitles(videoData.id);
-        const parsedSubtitles = parseSRT(subtitlesData);
-        setState(s => ({ ...s, subtitles: parsedSubtitles }));
-      } catch (subError) {
-        setState(s => ({ ...s, subtitles: [] }));
-      }
+      await AsyncStorage.setItem('cachedVideoData', JSON.stringify(videoData));
 
     } catch (error) {
       if (error.response?.status === 404) {
@@ -305,6 +300,13 @@ const Home1 = () => {
   }, [isFocused, fetchVideoAndSubtitles]);
 
   useEffect(() => {
+    if (!loading && !hasVideo && !demoShownRef.current) {
+      setShowDemoModal(true);
+      demoShownRef.current = true;
+    }
+  }, [loading, hasVideo]);
+
+  useEffect(() => {
     if (videoId && videoUri && audioUri && isFocused && !analysisTriggered.current) {
       analysisTriggered.current = true;
       runAnalysis();
@@ -369,6 +371,50 @@ const Home1 = () => {
               }
             />
           )}
+
+          <Modal
+            visible={showDemoModal}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowDemoModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.demoVideoContainer}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowDemoModal(false)}
+                >
+                  <ShareIcon name="close-circle" size={35} color="#fff" />
+                </TouchableOpacity>
+
+                {demoLoading && (
+                  <ActivityIndicator
+                    size="large"
+                    color="#fff"
+                    style={styles.videoLoader}
+                  />
+                )}
+
+                <Video
+                  source={{ uri: 'https://wezume.in/wezumedemo.mp4' }}
+                  style={styles.demoVideo}
+                  resizeMode="contain"
+                  controls={true}
+                  paused={false}
+                  ignoreSilentSwitch="ignore"
+                  playInBackground={false}
+                  playWhenInactive={false}
+                  onLoad={() => setDemoLoading(false)}
+                  onError={(e) => {
+                    console.log('Video Error:', e);
+                    setDemoLoading(false);
+                  }}
+                  repeat={true}
+                  fullscreen={false}
+                />
+              </View>
+            </View>
+          </Modal>
         </View>
       </ImageBackground>
     </View>
@@ -497,6 +543,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  demoVideoContainer: {
+    width: '90%',
+    height: '70%',
+    backgroundColor: '#000',
+    borderRadius: 15,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  demoVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  videoLoader: {
+    position: 'absolute',
+    alignSelf: 'center',
+    zIndex: 5,
   },
 });
 

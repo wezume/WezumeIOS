@@ -84,6 +84,7 @@ const LoginScreen = () => {
       });
 
       const userDetails = userDetailsResponse.data;
+      console.log("userDetails", userDetails);
       if (!userDetails || !userDetails.userId) throw new Error('User data is incomplete.');
 
       const {
@@ -94,6 +95,7 @@ const LoginScreen = () => {
         videos,
         college,
         profileUrl,
+        profilePic,
         jobid,
       } = userDetails;
       const videoId = videos?.[0]?.videoId || null;
@@ -104,23 +106,23 @@ const LoginScreen = () => {
 
 
       if (role === 'placementdrive' || role === 'academy' || role === 'placement') {
-        await savePlacementLoginData(userId, firstName, userEmail, college, jobOption, profileUrl, jobid);
+        await savePlacementLoginData(userId, firstName, userEmail, college, jobOption, profileUrl || profilePic, jobid);
         console.log('🔄 Redirecting to RoleSelection (Placement/Academy user)');
         navigation.navigate('RoleSelection');
       } else {
-        await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl);
+        await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic);
 
         switch (jobOption) {
           case 'Employee':
           case 'Entrepreneur':
           case 'Freelancer':
-            console.log('🚀 Redirecting to home1 (Employee/Entrepreneur/Freelancer)');
-            navigation.navigate('home1');
+            console.log('🚀 Redirecting to Edit (Employee/Entrepreneur/Freelancer)');
+            navigation.navigate('Edit');
             break;
           case 'Employer':
           case 'Investor':
-            console.log('🏠 Redirecting to RecruiterDash (Employer/Investor)');
-            navigation.navigate('RecruiterDash');
+            console.log('🏠 Redirecting to Edit (Employer/Investor)');
+            navigation.navigate('Edit');
             break;
           default:
             console.error('⚠️ Navigation Failed: Unknown Role!', normalizedJobOption);
@@ -224,9 +226,9 @@ const LoginScreen = () => {
               await saveStorage(userId, firstName, email, jobOption, userResponse.data.industry, null, null, profileUrl);
 
               if (jobOption === 'Employer' || jobOption === 'Investor') {
-                navigation.navigate('RecruiterDash');
+                navigation.navigate('Edit');
               } else {
-                navigation.navigate('home1');
+                navigation.navigate('Edit');
               }
             } else {
               setUserData({ given_name, email, picture });
@@ -254,9 +256,9 @@ const LoginScreen = () => {
       setShowRoleSelection(false);
 
       if (role === 'Employer' || role === 'Investor') {
-        navigation.navigate('RecruiterDash');
+        navigation.navigate('Edit');
       } else {
-        navigation.navigate('home1');
+        navigation.navigate('Edit');
       }
     } catch (error) {
       console.error('Error in handleRoleSelect:', error);

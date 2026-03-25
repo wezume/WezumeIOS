@@ -55,10 +55,12 @@ const MenuComponent = ({
     <View style={styles.overlay}>
       <TouchableWithoutFeedback onPress={onClose}>
         <Animated.View
-          style={[styles.backdrop, { opacity: slideAnim.interpolate({
-            inputRange: [0, menuWidth],
-            outputRange: [0.5, 0],
-          })}]}
+          style={[styles.backdrop, {
+            opacity: slideAnim.interpolate({
+              inputRange: [0, menuWidth],
+              outputRange: [0.5, 0],
+            })
+          }]}
         />
       </TouchableWithoutFeedback>
       <Animated.View
@@ -73,12 +75,14 @@ const MenuComponent = ({
           end={{ x: 1, y: 1 }}
           style={styles.profileSection}
         >
-          <View style={styles.profileImageContainer}>
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.profileImage} />
-            ) : (
-              <UserIcon name="user-circle" size={40} color="#fff" />
-            )}
+          <View style={styles.profileShadowWrapper}>
+            <View style={styles.profileImageContainer}>
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              ) : (
+                <UserIcon name="user-circle" size={40} color="#fff" />
+              )}
+            </View>
           </View>
           {/* 2. Added a View to group name and jobOption */}
           <View style={styles.userInfo}>
@@ -98,8 +102,8 @@ const MenuComponent = ({
                 onClose();
               }}
             >
-              {item.icon && React.cloneElement(item.icon, { 
-                color: route.name === item.routeName ? '#007BFF' : '#4F4F4F' 
+              {item.icon && React.cloneElement(item.icon, {
+                color: route.name === item.routeName ? '#007BFF' : '#4F4F4F'
               })}
               <Text style={[styles.menuText, route.name === item.routeName && styles.activeMenuText]}>
                 {item.label}
@@ -109,7 +113,7 @@ const MenuComponent = ({
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={styles.menuContent}
         />
-        
+
         {logoutItem && (
           <View style={styles.logoutSection}>
             <TouchableOpacity
@@ -155,18 +159,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     marginBottom: 10,
-    
+
   },
   // --- MODIFIED: Added shadow for elevation ---
-  profileImageContainer: {
+  profileShadowWrapper: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     // Shadow for iOS
     shadowColor: '#000',
@@ -175,6 +174,16 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     // Elevation for Android
     elevation: 10,
+  },
+  profileImageContainer: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileImage: {
     width: '100%',

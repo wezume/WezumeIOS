@@ -102,7 +102,7 @@ const Header = ({ profile, userName }) => {
 
     // Start with items visible to everyone
     let items = [
-      { label: 'Tutorial', routeName: 'Tutorial', icon: <VideoIcon name="comment-video" size={22} />, onPress: () => openLink('https://wezume.com/wezume-demo-video.mp4') },
+      { label: 'Tutorial', routeName: 'Tutorial', icon: <VideoIcon name="comment-video" size={22} />, onPress: () => openLink('https://wezume.in/wezumedemo.mp4') },
       { label: 'FAQ', routeName: 'FAQ', icon: <FaqIcon name="questioncircleo" size={20} />, onPress: () => openLink('https://wezume.com/faq/') },
       { label: 'Privacy Policy', routeName: 'Privacy', icon: <PrivacyIcon name="privacy-tip" size={22} />, onPress: () => openLink('https://wezume.com/privacy-policy/') },
     ];

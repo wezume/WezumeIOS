@@ -264,55 +264,107 @@ const Profile = () => {
   };
 
   const handleSend = async () => {
-    if (message.trim()) {
-      addMessage(message.trim(), 'text', true);
-      const searchText = message.trim();
-      setMessage('');
-      try {
-        const userId = await AsyncStorage.getItem('userId');
-        if (!userId) return;
+    console.log('🟢 STEP 0 → handleSend triggered');
 
-        setSearchLoading(true);
-        setGlobalLoading(true);
-        setGlobalLoadingMessage('Searching videos...');
+    if (!message.trim()) {
+      console.warn('🟡 STEP 0.1 → Message is empty, exiting');
+      return;
+    }
 
-        console.log('Testing text search with:', searchText);
-        const response = await apiClient.post('/api/search/voice', null, {
-          params: {
-            userId: userId,
-            transcription: searchText
-          }
-        });
-        console.log('Text Search Results:', response.data);
+    const originalText = message.trim();
+    console.log('🟢 STEP 1 → Original text:', originalText);
 
-        const videos = Array.isArray(response.data) ? response.data : (response.data?.videos || []);
-        if (Array.isArray(videos) && videos.length > 0) {
-          // add a tappable message that navigates to FilteredVideos with the videos
-          addMessage(
-            `Found ${videos.length} video(s), click to view`,
-            'video_results',
-            false,
-            videos,
-            () => navigation.navigate('Filtered', { videos })
-          );
-        } else {
-          addMessage('No video results found.', 'system', false);
-        }
+    addMessage(originalText, 'text', true);
+    setMessage('');
 
-      } catch (error) {
-        console.error('Text Search Failed:', error);
-        if (error.response && error.response.status === 403) {
-          Alert.alert('Auth Error', 'Text search also got 403. Please Logout & Login.');
-        } else {
-          Alert.alert('Error', 'Search failed. Check logs.');
-        }
-      } finally {
-        setSearchLoading(false);
-        setGlobalLoading(false);
-        setGlobalLoadingMessage('');
+    try {
+      console.log('🟢 STEP 2 → Fetching userId from AsyncStorage');
+      const userId = await AsyncStorage.getItem('userId');
+
+      if (!userId) {
+        console.error('🔴 STEP 2.1 → userId not found, exiting');
+        return;
       }
+
+      console.log('🟢 STEP 2.2 → userId fetched:', userId);
+
+      let jobId = undefined;
+      let transcription = originalText;
+
+      // 🔹 Detect pure alphanumeric job code like C191, JD45, HR102
+      const jobCodePattern = /^[A-Za-z]{1,5}\d+$/;
+      console.log('🟢 STEP 3 → Checking if input is job code');
+
+      if (jobCodePattern.test(originalText)) {
+        jobId = originalText.toUpperCase();
+        transcription = '';
+
+        console.log('🟢 STEP 3.1 → Job code detected');
+        console.log('    → jobId:', jobId);
+        console.log('    → transcription cleared');
+      } else {
+        console.log('🟡 STEP 3.2 → Not a job code, normal text search');
+      }
+
+      const requestParams = {
+        userId: Number(userId),
+        transcription,
+        ...(jobId ? { jobId } : {})
+      };
+
+      console.log('🟢 STEP 4 → Final request params:', requestParams);
+
+      setSearchLoading(true);
+      setGlobalLoading(true);
+      setGlobalLoadingMessage('Searching videos...');
+
+      console.log('🟢 STEP 5 → Sending API request');
+
+      const response = await apiClient.post(
+        '/api/search/voice',
+        null,
+        { params: requestParams }
+      );
+
+      console.log('🟢 STEP 6 → API response received');
+      console.log('🟢 STEP 6.1 → Raw response data:', response.data);
+
+      const videos = Array.isArray(response.data)
+        ? response.data
+        : response.data?.videos || [];
+
+      console.log('🟢 STEP 7 → Parsed videos array length:', videos.length);
+
+      if (videos.length > 0) {
+        console.log('🟢 STEP 7.1 → Videos found, navigating to results screen');
+
+        addMessage(
+          `Found ${videos.length} video(s), click to view`,
+          'video_results',
+          false,
+          videos,
+          () => navigation.navigate('Filtered', { videos })
+        );
+      } else {
+        console.warn('🟡 STEP 7.2 → No videos found');
+        addMessage('No video results found.', 'system', false);
+      }
+
+    } catch (error) {
+      console.error('🔴 STEP 8 → Voice Search Failed');
+      console.error(error);
+      Alert.alert('Error', 'Search failed. Please try again.');
+    } finally {
+      console.log('🟢 STEP 9 → Cleaning up loaders');
+
+      setSearchLoading(false);
+      setGlobalLoading(false);
+      setGlobalLoadingMessage('');
     }
   };
+
+
+
 
   const renderMessageItem = ({ item }) => {
     const BubbleWrapper = item.onPress ? TouchableOpacity : View;
