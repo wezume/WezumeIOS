@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  ImageBackground,
   Button,
 } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
@@ -21,7 +22,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import LinearGradient from 'react-native-linear-gradient';
-import FastImage from 'react-native-fast-image';
 import axios from 'axios';
 import { WebView } from 'react-native-webview';
 import { useNavigation } from '@react-navigation/native';
@@ -125,7 +125,7 @@ const LoginScreen = () => {
             navigation.navigate('Edit');
             break;
           default:
-            console.error('⚠️ Navigation Failed: Unknown Role!', normalizedJobOption);
+            console.error('⚠️ Navigation Failed: Unknown Role!', jobOption);
             Alert.alert('Login Error', `Unknown or unrecognized user role: ${jobOption}`);
             break;
         }
@@ -206,6 +206,44 @@ const LoginScreen = () => {
     return params;
   };
 
+  const handleLinkedInExistingUserLogin = async (email, given_name, picture) => {
+    // User exists — log them in using their email via the standard login endpoint
+    try {
+      console.log('🔄 Existing LinkedIn user, attempting login with email:', email);
+      const loginResponse = await axios.post(`${env.baseURL}/api/login`, {
+        email,
+        password: 'LinkedInLogin_Secure',
+      });
+      const { token, jobOption } = loginResponse.data;
+
+      if (!token) throw new Error('Login failed, token not received.');
+      await AsyncStorage.setItem('userToken', token);
+
+      const userDetailsResponse = await axios.get(`${env.baseURL}/api/user-detail`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const userDetails = userDetailsResponse.data;
+      if (!userDetails || !userDetails.userId) throw new Error('User data is incomplete.');
+
+      const { userId, firstName, email: userEmail, industry, videos, college, profileUrl, profilePic, jobid } = userDetails;
+      const videoId = videos?.[0]?.videoId || null;
+
+      if (jobOption === 'placementdrive' || jobOption === 'academy' || jobOption === 'placement') {
+        await savePlacementLoginData(userId, firstName, userEmail, college, jobOption, profileUrl || profilePic, jobid);
+        console.log('🔄 Existing LinkedIn user → Edit screen');
+        navigation.navigate('Edit');
+      } else {
+        await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic);
+        console.log('🏠 Existing LinkedIn user → Edit screen');
+        navigation.navigate('Edit');
+      }
+    } catch (loginError) {
+      console.error('❌ LinkedIn existing user login failed:', loginError.response?.data || loginError.message);
+      Alert.alert('Login Failed', 'Could not sign you in. Please try again.');
+    }
+  };
+
   const handleWebViewNavigationStateChange = async (navState) => {
     if (navState.url.includes('oauth/redirect')) {
       const params = getQueryParams(navState.url);
@@ -215,27 +253,31 @@ const LoginScreen = () => {
         setShowLinkedInModal(false);
         setLoading(true);
         try {
-          const response = await axios.post(`${env.baseURL}/auth/linkedin`, { code });
+          const response = await axios.post(`${env.baseURL}/api/auth/linkedin`, { code });
+          console.log('✅ LinkedIn Login Response Data:', response.data);
           const { given_name, email, picture } = response.data;
 
           if (given_name && email && picture) {
-            const userResponse = await axios.get(`${env.baseURL}/users/check`, { params: { email } });
+            try {
+              // Check if this email is available (new user)
+              const userCheck = await axios.post(`${env.baseURL}/api/users/check-email`, { email });
 
-            if (userResponse.data.exists) {
-              const { userId, jobOption, firstName, profileUrl } = userResponse.data;
-              await saveStorage(userId, firstName, email, jobOption, userResponse.data.industry, null, null, profileUrl);
-
-              if (jobOption === 'Employer' || jobOption === 'Investor') {
-                navigation.navigate('Edit');
-              } else {
-                navigation.navigate('Edit');
-              }
-            } else {
+              // 200 OK → email is free → new user, show role selection
+              console.log('🆕 New LinkedIn user detected. Showing role selection.');
               setUserData({ given_name, email, picture });
               setShowRoleSelection(true);
+            } catch (checkError) {
+              if (checkError.response && checkError.response.status === 400) {
+                // 400 → email already registered → log them into their existing account
+                console.log('✅ Email already registered. Logging into existing account...');
+                await handleLinkedInExistingUserLogin(email, given_name, picture);
+              } else {
+                console.error('Check Email Error:', checkError.message);
+                Alert.alert('Error', 'Could not verify your account. Please try again.');
+              }
             }
           } else {
-            Alert.alert('Error', 'User data is incomplete.');
+            Alert.alert('Error', 'User data is incomplete from LinkedIn.');
           }
         } catch (error) {
           console.error('Error during LinkedIn login:', error.response?.data || error.message);
@@ -249,29 +291,54 @@ const LoginScreen = () => {
 
   const handleRoleSelect = async (role) => {
     if (!userData) return;
-    const { email, given_name } = userData;
+    const { email, given_name, picture } = userData;
 
+    setLoading(true); // Show loader during registration
     try {
-      await saveStorage(null, given_name, email, role, '', null, '', userData.picture);
-      setShowRoleSelection(false);
+      // 1. Prepare registration data
+      const formData = new FormData();
+      formData.append('firstName', given_name);
+      formData.append('lastName', ''); // LinkedIn usually only gives one name in given_name/family_name
+      formData.append('email', email);
+      formData.append('jobOption', role);
+      formData.append('phoneNumber', '0000000000'); // Placeholder
+      formData.append('password', 'LinkedInLogin_Secure'); // Placeholder
 
-      if (role === 'Employer' || role === 'Investor') {
-        navigation.navigate('Edit');
-      } else {
-        navigation.navigate('Edit');
-      }
+      // 2. Perform the Signup
+      console.log("🚀 Auto-Registering LinkedIn User:", email);
+      await axios.post(
+        `${env.baseURL}/api/users/signup/user`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      // 3. Success! Now log them in immediately to get the token and detailed user info
+      console.log("✅ Registration successful. Performing auto-login for LinkedIn user...");
+      await handleLinkedInExistingUserLogin(email, given_name, picture);
+
+      // Cleanup
+      setShowRoleSelection(false);
+      setUserData(null);
+
     } catch (error) {
-      console.error('Error in handleRoleSelect:', error);
-      Alert.alert('Error', 'Could not select role.');
+      console.error('LinkedIn Auto-Registration Failed:', error.response?.data || error.message);
+      Alert.alert(
+        'Registration Error',
+        error.response?.data?.message || 'Could not create your account. Please try again or use standard signup.'
+      );
+    } finally {
+      setLoading(false);
     }
   };
   // --------------------------------------------------------------------
 
   return (
-    <FastImage
+    <ImageBackground
       style={styles.backgroundImage}
       source={require('./assets/Background-01.jpg')}
-      resizeMode={FastImage.resizeMode.cover}>
+      resizeMode="cover">
 
       <GestureHandlerRootView style={{ flex: 1 }}>
         <GestureDetector gesture={panGesture}>
@@ -313,7 +380,7 @@ const LoginScreen = () => {
               secureTextEntry
             />
             <TouchableOpacity onPress={() => navigation.navigate('ForgetPassword')}>
-              <Text style={styles.forgotPasswordText}>Forget Password ?</Text>
+              <Text style={styles.forgotPasswordText}>Forgot Password ?</Text>
             </TouchableOpacity>
 
             <LinearGradient colors={['#70bdff', '#2e80d8']} style={styles.loginButtonGradient}>
@@ -373,17 +440,27 @@ const LoginScreen = () => {
           </View>
         </Modal>
       )}
-    </FastImage>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   backgroundImage: { flex: 1, justifyContent: 'center', width: '100%' },
-  glassContainer: { width: '95%', borderRadius: 20, padding: 20, overflow: 'hidden', borderColor: 'rgba(255, 255, 255, 0.3)', borderWidth: 1.5, marginTop: '40%', alignSelf: 'center' },
-  absolute: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
+  glassContainer: {
+    width: '95%',
+    borderRadius: 20,
+    padding: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1.5,
+    marginTop: '40%',
+    alignSelf: 'center'
+  },
+
   img2: { width: 150, height: 75, alignSelf: 'center', marginBottom: 10 },
   loginhead: { textAlign: 'center', fontSize: 28, fontWeight: 'bold', color: '#000', marginBottom: 20, marginTop: '-10%' },
-  input: { backgroundColor: 'rgba(255, 255, 255, 0.4)', borderWidth: 0.3, padding: 12, marginBottom: 12, borderRadius: 10, borderColor: '#0387e0', color: '#000', fontSize: 16, fontWeight: '500' },
+  input: { backgroundColor: 'rgba(255, 255, 255, 1)', borderWidth: 0.3, padding: 12, marginBottom: 12, borderRadius: 10, borderColor: '#0387e0', color: '#000', fontSize: 16, fontWeight: '500' },
   forgotPasswordText: { color: '#000', textAlign: 'right', fontSize: 14, paddingBottom: 15, fontWeight: '600' },
   loginButtonGradient: { borderRadius: 10, elevation: 5, marginBottom: 15 },
   loginButton: { paddingVertical: 12, justifyContent: 'center', alignItems: 'center' },

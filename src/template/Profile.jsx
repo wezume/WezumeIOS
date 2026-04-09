@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -35,10 +35,27 @@ const Profile = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalLoadingMessage, setGlobalLoadingMessage] = useState('');
+  const [isRecruiter, setIsRecruiter] = useState(false);
   const recordingPath = useRef(null);
 
   // v4.x exports a singleton instance by default.
   const audioRecorderPlayer = useRef(AudioRecorderPlayer);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      try {
+        const role = await AsyncStorage.getItem('jobOption');
+        // Define recruiter roles
+        const recruiterRoles = ['Employer', 'Investor', 'placementdrive', 'academy', 'placement'];
+        if (role && recruiterRoles.includes(role)) {
+          setIsRecruiter(true);
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+      }
+    };
+    checkRole();
+  }, []);
 
   // Request permissions for Android
   const requestPermissions = async () => {
@@ -455,17 +472,19 @@ const Profile = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
           <View style={styles.inputContainer}>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={handleFileUpload}
-              activeOpacity={0.7}
-              disabled={isAnyLoading}>
-              {jdLoading ? (
-                <ActivityIndicator size="small" />
-              ) : (
-                <MaterialIcons name="attach-file" size={26} color="#3498db" />
-              )}
-            </TouchableOpacity>
+            {isRecruiter && (
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={handleFileUpload}
+                activeOpacity={0.7}
+                disabled={isAnyLoading}>
+                {jdLoading ? (
+                  <ActivityIndicator size="small" />
+                ) : (
+                  <MaterialIcons name="attach-file" size={26} color="#3498db" />
+                )}
+              </TouchableOpacity>
+            )}
 
             <View style={styles.inputWrapper}>
               <TextInput
@@ -499,6 +518,7 @@ const Profile = () => {
                 )}
               </TouchableOpacity>
             ) : (
+              isRecruiter ? (
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={handleVoiceRecord}
@@ -516,6 +536,9 @@ const Profile = () => {
                   )}
                 </View>
               </TouchableOpacity>
+            ) : (
+              <View style={{ width: 10 }} />
+            )
             )}
           </View>
         </KeyboardAvoidingView>

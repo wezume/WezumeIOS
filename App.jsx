@@ -36,6 +36,7 @@ import PlacemenntSignup from './src/template/placementSignup.jsx';
 import RoleSelection from './src/template/roleSelection';
 import RoleSwipe from './src/template/roleSwipe';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Test from './src/template/test.jsx';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -233,6 +234,7 @@ const App = () => {
           <Stack.Screen name="RoleSelection" component={RoleSelection} />
           <Stack.Screen name="RoleSwipe" component={RoleSwipe} />
           <Stack.Screen name="RecruiterDash" component={RecruiterDash} />
+          <Stack.Screen name="Test" component={Test} />
         </Stack.Navigator>
       </NavigationContainer>
       <AppUpdateChecker />

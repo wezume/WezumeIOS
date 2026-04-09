@@ -22,6 +22,7 @@ import UploadIcon from 'react-native-vector-icons/Feather';
 import PlayIcon from 'react-native-vector-icons/Ionicons';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
+import AnalyticIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // NOTE: Replace './api' with your actual API client setup if necessary.
 import apiClient from './api';
@@ -78,8 +79,12 @@ const VideoPlayer = ({ videoUri, subtitles }) => {
   );
 };
 
-const ActionButtons = ({ onShare, onDelete, isDisabled }) => (
+const ActionButtons = ({ onShare, onDelete, onReview, isDisabled }) => (
   <View style={styles.buttonContainer}>
+    <TouchableOpacity style={styles.actionButton} onPress={onReview} disabled={isDisabled}>
+      <AnalyticIcon name="brain" size={22} color="#fff" />
+      <Text style={styles.actionButtonText}>AI Review</Text>
+    </TouchableOpacity>
     <TouchableOpacity style={styles.actionButton} onPress={onShare} disabled={isDisabled}>
       <ShareIcon name="share-social-outline" size={22} color="#fff" />
       <Text style={styles.actionButtonText}>Share</Text>
@@ -89,7 +94,6 @@ const ActionButtons = ({ onShare, onDelete, isDisabled }) => (
       onPress={onDelete}
       disabled={isDisabled}>
       <DeleteIcon name="delete-outline" size={22} color="#fff" />
-      <Text style={styles.actionButtonText}>Delete</Text>
     </TouchableOpacity>
   </View>
 );
@@ -166,16 +170,18 @@ const Home1 = () => {
         thumbnail: videoData.tumbnail,
         hasVideo: true,
         subtitles: parsedSubtitles,
+        loading: false,
       }));
 
       await AsyncStorage.setItem('cachedVideoData', JSON.stringify(videoData));
 
     } catch (error) {
       if (error.response?.status === 404) {
-        setState(s => ({ ...s, hasVideo: false, videoUri: null, videoId: null, subtitles: [] }));
+        setState(s => ({ ...s, hasVideo: false, videoUri: null, videoId: null, subtitles: [], loading: false }));
         await AsyncStorage.removeItem('cachedVideoData');
       } else {
         console.error('Error fetching video:', error);
+        setState(s => ({ ...s, loading: false }));
       }
     }
   }, []);
@@ -264,6 +270,14 @@ const Home1 = () => {
     }
   }, [thumbnail, firstName, videoUri, videoId]);
 
+  const handleReview = useCallback(() => {
+    if (!videoId) {
+      Alert.alert('Analysis Not Ready', 'Please wait until we finish processing your video.');
+      return;
+    }
+    navigation.navigate('Test', { videoId });
+  }, [videoId, navigation]);
+
   // --- Effects ---
 
   useEffect(() => {
@@ -288,7 +302,6 @@ const Home1 = () => {
         ...s,
         userData: storedUserData,
         profileImage: profileUrl[1],
-        loading: false
       }));
 
       fetchVideoAndSubtitles(storedUserData.userId);
@@ -358,6 +371,7 @@ const Home1 = () => {
               <ActionButtons
                 onShare={handleShare}
                 onDelete={handleDeletePress}
+                onReview={handleReview}
               />
             </>
           ) : (
@@ -478,14 +492,14 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '80%',
+    justifyContent: 'space-between',
+    width: '95%',
     marginTop: 25,
   },
   actionButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 30,
     flexDirection: 'row',
     alignItems: 'center',

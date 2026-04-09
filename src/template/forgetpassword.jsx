@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,9 @@ import {
   Image,
   Alert,
   Dimensions,
+  ImageBackground
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import FastImage from 'react-native-fast-image';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import env from './env';
@@ -21,7 +21,8 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector,GestureHandlerRootView } from 'react-native-gesture-handler';
+import apiClient from './api';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 // Other imports remain the same
 const { width, height } = Dimensions.get('window');
 
@@ -34,38 +35,38 @@ const ForgetPassword = () => {
 
   const rotateX = useSharedValue(0);
   const rotateY = useSharedValue(0);
-      // Gesture handler for the tilt effect
-      const panGesture = Gesture.Pan()
-        .onUpdate((event) => {
-          rotateY.value = interpolate(
-            event.translationX,
-            [-width / 2, width / 2],
-            [-10, 10] // Tilt range in degrees
-          );
-          rotateX.value = interpolate(
-            event.translationY,
-            [-height / 2, height / 2],
-            [10, -10] // Tilt range in degrees
-          );
-        })
-        .onEnd(() => {
-          // Reset rotation smoothly when gesture ends
-          rotateX.value = withTiming(0, { duration: 500 });
-          rotateY.value = withTiming(0, { duration: 500 });
-        });
-    
-      // Animated style for the container
-      const animatedStyle = useAnimatedStyle(() => {
-        const rotateXvalue = `${rotateX.value}deg`;
-        const rotateYvalue = `${rotateY.value}deg`;
-        return {
-          transform: [
-            { perspective: 300 },
-            { rotateX: rotateXvalue },
-            { rotateY: rotateYvalue },
-          ],
-        };
-      });
+  // Gesture handler for the tilt effect
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      rotateY.value = interpolate(
+        event.translationX,
+        [-width / 2, width / 2],
+        [-10, 10] // Tilt range in degrees
+      );
+      rotateX.value = interpolate(
+        event.translationY,
+        [-height / 2, height / 2],
+        [10, -10] // Tilt range in degrees
+      );
+    })
+    .onEnd(() => {
+      // Reset rotation smoothly when gesture ends
+      rotateX.value = withTiming(0, { duration: 500 });
+      rotateY.value = withTiming(0, { duration: 500 });
+    });
+
+  // Animated style for the container
+  const animatedStyle = useAnimatedStyle(() => {
+    const rotateXvalue = `${rotateX.value}deg`;
+    const rotateYvalue = `${rotateY.value}deg`;
+    return {
+      transform: [
+        { perspective: 300 },
+        { rotateX: rotateXvalue },
+        { rotateY: rotateYvalue },
+      ],
+    };
+  });
 
   const handleReset = async () => {
     console.log('handleReset started');
@@ -91,9 +92,9 @@ const ForgetPassword = () => {
       setLoading(true);
 
       const resetResponse = await axios.put(
-        `${env.baseURL}/users/update-password?email=${email}&newPassword=${newPassword}`,
+        `${env.baseURL}/api/users/update-password?email=${email}&newPassword=${newPassword}`,
         {}, // Empty body for URL parameters
-        {headers: {'Content-Type': 'application/json'}}
+        { headers: { 'Content-Type': 'application/json' } }
       );
 
       console.log('Response from /users/update-password:', resetResponse.data);
@@ -124,64 +125,64 @@ const ForgetPassword = () => {
   };
 
   return (
-    <FastImage
+    <ImageBackground
       style={styles.container}
       source={require('./assets/login.jpg')}
-      resizeMode={FastImage.resizeMode.cover}>
+      resizeMode="cover">
       <GestureHandlerRootView style={{ flex: 1 }}>
-           <GestureDetector gesture={panGesture}>
-             <Animated.View style={[styles.glassContainer, animatedStyle]}>
-               <BlurView
-                 style={styles.absolute}
-                 blurType="xlight" // Can be 'light', 'dark', 'xlight', etc.
-                 blurAmount={8} // Adjust blur intensity
-                 reducedTransparencyFallbackColor="white"
-               />
-        <Image style={styles.img2} source={require('./assets/logopng.png')} />
-        <Text style={styles.title}>Reset Password</Text>
-        <View style={styles.input}>
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#000"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-        <View style={styles.input}>
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor="#000"
-            value={newPassword}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
-        <View style={styles.input}>
-          <TextInput
-            placeholder="Confirm Password"
-            placeholderTextColor="#000"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-          />
-        </View>
-        <LinearGradient colors={['#70bdff', '#2e80d8']} style={styles.btn}>
-          <TouchableOpacity
-            style={styles.signupButton}
-            onPress={handleReset}
-            disabled={loading}>
-            <Text style={styles.signupButtonText}>
-              {loading ? 'Processing...' : 'Reset Password'}
-            </Text>
-          </TouchableOpacity>
-        </LinearGradient>
-      </Animated.View>
-      </GestureDetector>
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.glassContainer, animatedStyle]}>
+            <BlurView
+              style={styles.absolute}
+              blurType="xlight" // Can be 'light', 'dark', 'xlight', etc.
+              blurAmount={8} // Adjust blur intensity
+              reducedTransparencyFallbackColor="white"
+            />
+            <Image style={styles.img2} source={require('./assets/logopng.png')} />
+            <Text style={styles.title}>Reset Password</Text>
+            <View style={styles.input}>
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#000"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            <View style={styles.input}>
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#000"
+                value={newPassword}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
+            <View style={styles.input}>
+              <TextInput
+                placeholder="Confirm Password"
+                placeholderTextColor="#000"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+              />
+            </View>
+            <LinearGradient colors={['#70bdff', '#2e80d8']} style={styles.btn}>
+              <TouchableOpacity
+                style={styles.signupButton}
+                onPress={handleReset}
+                disabled={loading}>
+                <Text style={styles.signupButtonText}>
+                  {loading ? 'Processing...' : 'Reset Password'}
+                </Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Animated.View>
+        </GestureDetector>
       </GestureHandlerRootView>
 
-    </FastImage>
+    </ImageBackground>
   );
 };
 
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
   },
   // This is your main glass container
   glassContainer: {
-    marginTop:'50%',
+    marginTop: '50%',
     alignSelf: 'center',
     width: '90%',
     padding: 25,
@@ -216,8 +217,8 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.6)', // Semi-transparent background
-    borderWidth:0.3,
-    borderColor:'#0387e0',
+    borderWidth: 0.3,
+    borderColor: '#0387e0',
     padding: 14,
     marginBottom: 15,
     borderRadius: 12, // Consistent rounded corners
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     color: '#333',
-    marginBottom:'5%',
-    marginTop:'-10%'
+    marginBottom: '5%',
+    marginTop: '-10%'
   },
 });

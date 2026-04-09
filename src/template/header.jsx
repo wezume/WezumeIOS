@@ -11,43 +11,72 @@ import {
   Linking,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import MenuIcon from 'react-native-vector-icons/AntDesign';
-import NotiIcon from 'react-native-vector-icons/FontAwesome';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
-import MenuComponent from './menu'; // Import the new MenuComponent
-import UserIcon from 'react-native-vector-icons/FontAwesome';
-import SearchIcon from 'react-native-vector-icons/Ionicons';
-import VideoIcon from 'react-native-vector-icons/Foundation';
-import FaqIcon from 'react-native-vector-icons/AntDesign';
-import LogoutIcon from 'react-native-vector-icons/AntDesign';
-import PrivacyIcon from 'react-native-vector-icons/MaterialIcons';
-import AnalyticsIcon from 'react-native-vector-icons/MaterialIcons'; // --- ADDED: Icon for Analytics
+import MenuComponent from './menu';
+
+// --- Icon Mapping ---
+const ICON_MAP = {
+  Menu: 'menu',
+  Notification: 'notifications',
+  User: 'person',
+  Search: 'search',
+  Video: 'movie',
+  FAQ: 'help-outline',
+  Logout: 'logout',
+  Privacy: 'security',
+  Analytics: 'analytics',
+  Tutorial: 'ondemand-video',
+};
+
+// --- Menu Item Generator (Remains the same) ---
+const createMenuItem = (label, onPress, emojiKey, routeName) => ({
+  label,
+  onPress,
+  icon: <MaterialIcons name={ICON_MAP[emojiKey]} size={24} color="#555" />,
+  routeName,
+});
+
 
 const Header = ({ profile, userName }) => {
   const navigation = useNavigation();
+
+  // 1. All hooks are now called unconditionally at the top level
   const [menuVisible, setMenuVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isNotiModalVisible, setIsNotiModalVisible] = useState(false);
-  const [userData, setUserData] = useState({ jobOption: null, roleCode: null, email: null });
 
-  // --- Data Loading ---
+  // 2. CONSOLIDATED USER DATA STATE
+  const [userData, setUserData] = useState({
+    jobOption: null,
+    roleCode: null,
+    email: null,
+    isLoading: true
+  });
+
+
+  // --- Data Loading Effect ---
   useEffect(() => {
     const loadData = async () => {
       try {
         const jobOption = await AsyncStorage.getItem('jobOption');
         const email = await AsyncStorage.getItem('email');
         const roleCode = await AsyncStorage.getItem('roleCode');
-        setUserData({ jobOption, email, roleCode });
+
+        // Update state with loaded data and set loading to false
+        setUserData({ jobOption, email, roleCode, isLoading: false });
       } catch (error) {
         console.error('Error loading user data from AsyncStorage', error);
+        setUserData(s => ({ ...s, isLoading: false })); // Still set loading to false on error
       }
     };
     loadData();
   }, []);
 
+  // --- Notification Focus Effect (Remains the same and is correct) ---
   useFocusEffect(
     useCallback(() => {
       const fetchNotifications = async () => {
@@ -62,92 +91,76 @@ const Header = ({ profile, userName }) => {
     }, [])
   );
 
-  // --- MODIFIED: Logout function now clears all AsyncStorage data ---
-  const handleLogout = async () => {
+  // --- Performance Optimized Callbacks (Remain the same) ---
+  const handleLogout = useCallback(async () => {
     try {
-      // This will remove all data stored by your app.
       await AsyncStorage.clear();
-      console.log('AsyncStorage cleared successfully.');
-      // Navigate to the login screen, resetting the navigation stack.
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'LoginScreen' }],
-      });
+      navigation.reset({ index: 0, routes: [{ name: 'LoginScreen' }] });
     } catch (error) {
       console.error('Error during logout:', error);
-      Alert.alert("Logout Failed", "An error occurred while logging out.");
+      Alert.alert('Logout Failed', 'An error occurred while logging out.');
     }
-  };
+  }, [navigation]);
 
-  const clearNotifications = async () => {
+  const clearNotifications = useCallback(async () => {
     try {
       await AsyncStorage.removeItem('likeNotifications');
       setNotifications([]);
     } catch (error) {
       console.error('Error clearing notifications:', error);
     }
-  };
+  }, []);
 
-  const openLink = (url) => Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
+  const openLink = useCallback((url) => Linking.openURL(url).catch(err => console.error("Couldn't load page", err)), []);
 
-  // --- MODIFIED: Menu items are now generated dynamically ---
-  const getMenuItems = () => {
-    // Ensure userData and jobOption exist before proceeding
-    if (!userData || !userData.jobOption) {
-      return []; // Return an empty array or just the logout button
+  const navigateTo = useCallback((screenName) => navigation.navigate(screenName), [navigation]);
+
+  // --- Memoized Menu Items Generator ---
+  const getMenuItems = useCallback(() => {
+    // Check for both loading status and existence of jobOption
+    if (userData.isLoading || !userData.jobOption) {
+      // While loading or if no role is set, only show Logout
+      if (userData.isLoading) return [];
+
+      // If not loading but no jobOption, only show logout
+      return [createMenuItem('Logout', handleLogout, 'Logout')];
     }
 
-    // Convert the role to lowercase for case-insensitive comparison
     const userRole = userData.jobOption.toLowerCase();
 
-    // Start with items visible to everyone
-    let items = [
-      { label: 'Tutorial', routeName: 'Tutorial', icon: <VideoIcon name="comment-video" size={22} />, onPress: () => openLink('https://wezume.in/wezumedemo.mp4') },
-      { label: 'FAQ', routeName: 'FAQ', icon: <FaqIcon name="questioncircleo" size={20} />, onPress: () => openLink('https://wezume.com/faq/') },
-      { label: 'Privacy Policy', routeName: 'Privacy', icon: <PrivacyIcon name="privacy-tip" size={22} />, onPress: () => openLink('https://wezume.com/privacy-policy/') },
+    const items = [
+      // createMenuItem('Tutorial', () => openLink('https://wezume.com/wezume-demo-video.mp4'), 'Tutorial'),
+      createMenuItem('FAQ', () => openLink('https://wezume.in/faq.html'), 'FAQ'),
+      createMenuItem('Privacy Policy', () => openLink('https://wezume.in/privacypolicy.html'), 'Privacy'),
     ];
 
-    // --- Role-Based Logic ---
+    const isPlacementRole = ['placementdrive', 'academy'].includes(userRole);
+    const isVideoRole = ['employee', 'entrepreneur', 'freelancer'].includes(userRole);
 
-    // 1. Add 'Videos' only for specific roles
-    const videoRoles = ['employee', 'entrepreneur', 'ereelancer'];
-    if (videoRoles.includes(userRole)) {
-      // Insert 'Videos' at a specific position (e.g., after Search)
-      // We'll add it later to maintain order
-    }
-
-    // 2. Add 'Profile' and 'Search' for everyone EXCEPT placement roles
-    const placementRoles = ['placementdrive', 'academy'];
-    if (!placementRoles.includes(userRole)) {
-      // Use unshift to add items to the beginning of the array
+    if (!isPlacementRole) {
       items.unshift(
-        { label: 'Search', routeName: 'profile', icon: <SearchIcon name="search" size={22} />, onPress: () => navigation.navigate('profile') },
-        { label: 'Profile', routeName: 'Account', icon: <UserIcon name="user-o" size={20} />, onPress: () => navigation.navigate('Account') }
+        createMenuItem('Profile', () => navigateTo('Account'), 'User', 'Account'),
+        createMenuItem('Search', () => navigateTo('profile'), 'Search', 'profile')
       );
 
-      // Now, add the 'Videos' item if the role is correct
-      if (videoRoles.includes(userRole)) {
-        items.splice(2, 0, { label: 'Videos', routeName: 'Myvideos', icon: <VideoIcon name="video" size={22} />, onPress: () => navigation.navigate('Myvideos') });
+      if (isVideoRole) {
+        items.splice(2, 0, createMenuItem('Videos', () => navigateTo('Myvideos'), 'Video', 'Myvideos'));
       }
     }
 
-    // --- Special Case Logic ---
-
-    // Conditionally add the 'Analytics' item for the specific admin email
     if (userData.email === 'pitch@wezume.com') {
-      items.push({
-        label: 'Analytics',
-        routeName: 'Analytics',
-        icon: <AnalyticsIcon name="analytics" size={22} />,
-        onPress: () => navigation.navigate('AnalyticScreen')
-      });
+      items.push(
+        createMenuItem('Analytics', () => navigateTo('AnalyticScreen'), 'Analytics', 'AnalyticScreen')
+      );
     }
 
-    // Add 'Logout' at the very end
-    items.push({ label: 'Logout', icon: <LogoutIcon name="logout" size={20} />, onPress: handleLogout });
+    items.push(createMenuItem('Logout', handleLogout, 'Logout'));
 
     return items;
-  };
+  }, [userData, openLink, navigateTo, handleLogout]);
+
+
+  const showNotificationButton = ['Employee', 'Entrepreneur', 'Freelancer'].includes(userData.jobOption);
 
   return (
     <>
@@ -159,13 +172,14 @@ const Header = ({ profile, userName }) => {
           <Image source={require('./assets/headlogo.png')} style={styles.logo} />
 
           <View style={styles.rightControls}>
-            {(userData.jobOption === 'Employee' || userData.jobOption === 'Entrepreneur' || userData.jobOption === 'Freelancer') && (
+            {/* The condition for rendering the button is simple and does not use a hook */}
+            {showNotificationButton && (
               <TouchableOpacity onPress={() => setIsNotiModalVisible(true)} style={styles.controlButton}>
-                <NotiIcon name={'bell-o'} size={22} color={'#fff'} />
+                <MaterialIcons name={ICON_MAP.Notification} size={25} color="#fff" />
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.controlButton}>
-              <MenuIcon name="menufold" size={24} color="#fff" />
+              <MaterialIcons name={ICON_MAP.Menu} size={28} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -174,7 +188,7 @@ const Header = ({ profile, userName }) => {
       <MenuComponent
         isVisible={menuVisible}
         onClose={() => setMenuVisible(false)}
-        menuItems={getMenuItems()} // Call the function to get the correct menu items
+        menuItems={getMenuItems()}
         userName={userName}
         jobOption={userData.jobOption}
         profileImage={profile}

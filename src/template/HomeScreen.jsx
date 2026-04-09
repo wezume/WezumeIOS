@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -26,7 +26,7 @@ import apiClient from './api';
 const CACHED_VIDEOS_KEY = 'cachedVideos';
 
 // --- Memoized and Animated Video Item ---
-const VideoThumbnail = memo(({ item, index, onPress }) => {
+const VideoThumbnail = memo(({ item, index, onVideoPress }) => {
   const scale = useSharedValue(0.5);
   const opacity = useSharedValue(0);
 
@@ -42,7 +42,7 @@ const VideoThumbnail = memo(({ item, index, onPress }) => {
 
   return (
     <Animated.View style={[styles.videoItemContainer, animatedStyle]}>
-      <TouchableOpacity onPress={onPress} style={styles.videoItem}>
+      <TouchableOpacity onPress={() => onVideoPress(item, index)} style={styles.videoItem}>
         {item.thumbnail ? (
           <ImageBackground
             source={{ uri: item.thumbnail }}
@@ -57,6 +57,10 @@ const VideoThumbnail = memo(({ item, index, onPress }) => {
       </TouchableOpacity>
     </Animated.View>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison to ensure stability
+  return prevProps.item.id === nextProps.item.id &&
+    prevProps.onVideoPress === nextProps.onVideoPress;
 });
 
 const HomeScreen = () => {
@@ -65,6 +69,7 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState({ userId: null, firstName: '' });
   const [videos, setVideos] = useState([]);
+  const videosRef = useRef([]); // Ref to hold videos for stable callbacks
   const [profileImage, setProfileImage] = useState(null);
 
   // --- Pagination and Refreshing State ---
@@ -85,13 +90,13 @@ const HomeScreen = () => {
     if (!isRefreshing) {
       loadingFunction(true);
     }
-    
+
     try {
       const response = await apiClient.get(`/api/videos/videos?page=${currentPage}&size=${VIDEO_PAGE_SIZE}`);
       const { videos: videoData, totalPages, currentPage: responseCurrentPage } = response.data;
 
       if (!Array.isArray(videoData)) throw new Error('Invalid data format');
-      
+
       if (responseCurrentPage >= totalPages - 1 || videoData.length === 0) {
         setHasMoreData(false);
       }
@@ -103,24 +108,34 @@ const HomeScreen = () => {
           userId: video.userId,
           uri: video.videoUrl || video.uri,
           firstName: video.firstname || video.firstName || '',
-          profileImage: video.profilepic, 
+          profileImage: video.profilepic,
           phoneNumber: video.phonenumber || video.phoneNumber || '',
           email: video.email || '',
           thumbnail: video.thumbnail || null,
+          link: video.links || '',
         }));
+      console.log("formatted video", formattedVideos);
 
       if (currentPage === 0) {
         setVideos(formattedVideos);
         await AsyncStorage.setItem(CACHED_VIDEOS_KEY, JSON.stringify(formattedVideos));
       } else {
+
         setVideos(prevVideos => {
           const newUniqueVideos = formattedVideos.filter(
             newVideo => !prevVideos.some(prevVideo => prevVideo.id === newVideo.id)
           );
           const updatedVideos = [...prevVideos, ...newUniqueVideos];
           AsyncStorage.setItem(CACHED_VIDEOS_KEY, JSON.stringify(updatedVideos));
+          // Update ref
+          videosRef.current = updatedVideos;
           return updatedVideos;
         });
+      }
+
+      // Update ref for page 0 case too
+      if (currentPage === 0) {
+        videosRef.current = formattedVideos;
       }
 
     } catch (err) {
@@ -149,11 +164,13 @@ const HomeScreen = () => {
       const currentUser = { firstName, userId };
       setUser(currentUser);
       setProfileImage(profilePic);
-      
+
       try {
         const cachedVideos = await AsyncStorage.getItem(CACHED_VIDEOS_KEY);
         if (cachedVideos) {
-          setVideos(JSON.parse(cachedVideos));
+          const parsed = JSON.parse(cachedVideos);
+          setVideos(parsed);
+          videosRef.current = parsed;
         }
       } catch (error) {
         console.error("Error loading videos from cache:", error);
@@ -188,20 +205,20 @@ const HomeScreen = () => {
       fetchVideosFromServer(nextPage, user.userId);
     }
   };
-  
+
   const handleVideoPress = useCallback((item, index) => {
     navigation.navigate('HomeSwipe', {
       videoId: item.id,
       index,
-      allvideos: videos,
+      allvideos: videosRef.current, // Use ref to avoid dependency on 'videos' state
     });
-  }, [navigation, videos]);
+  }, [navigation]); // removed 'videos' dependency
 
   const renderItem = useCallback(({ item, index }) => (
     <VideoThumbnail
       item={item}
       index={index}
-      onPress={() => handleVideoPress(item, index)}
+      onVideoPress={handleVideoPress}
     />
   ), [handleVideoPress]);
 
@@ -212,19 +229,25 @@ const HomeScreen = () => {
 
   // --- Back Button Handler ---
   useEffect(() => {
+    if (!isFocused) return;
+
     const backAction = () => {
-      if (isFocused) {
-        Alert.alert('Hold on!', 'Are you sure you want to exit?', [
-          { text: 'Cancel', onPress: () => null, style: 'cancel' },
-          { text: 'YES', onPress: () => BackHandler.exitApp() },
-        ]);
-        return true;
-      }
-      return false;
+      Alert.alert(
+        "Go Back",
+        "Are you sure you want to go back?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "YES", onPress: () => navigation.goBack() }
+        ]
+      );
+      return true;
     };
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-    return () => backHandler.remove();
-  }, [isFocused]);
+
+    const subscription = BackHandler.addEventListener("hardwareBackPress", backAction);
+
+    return () => subscription.remove();
+  }, [isFocused, navigation]);
+
 
   return (
     <View style={styles.container}>
@@ -245,9 +268,9 @@ const HomeScreen = () => {
             onEndReachedThreshold={0.5}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={!isLoading && !isRefreshing ? (
-                <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No videos available right now.</Text>
-                </View>
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No videos available right now.</Text>
+              </View>
             ) : null}
             // ✅ FIX: Added props for pull-to-refresh
             onRefresh={handleRefresh}

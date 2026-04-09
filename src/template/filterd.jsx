@@ -48,7 +48,7 @@ const VideoThumbnail = memo(({ item, index, onPress }) => {
             {/* ⭐ CONFIDENCE WATERMARK */}
             {item.confidence != null && (
               <View style={styles.confidenceBadge}>
-                <Text style={styles.confidenceText}>{item.confidence}%</Text>
+                <Text style={styles.confidenceText}>{item.confidence}% Match</Text>
               </View>
             )}
           </ImageBackground>
@@ -87,8 +87,10 @@ const FilteredVideosScreen = () => {
   const VIDEO_PAGE_SIZE = 20;
 
   /* -------------------- FORMAT VIDEO OBJECTS -------------------- */
-  const formatVideos = (list) =>
-    list
+  const formatVideos = (list) => {
+    if (list?.length > 0) {
+    }
+    return list
       ?.filter((video) => video.thumbnail)
       .map((video) => ({
         id: video.id,
@@ -100,7 +102,9 @@ const FilteredVideosScreen = () => {
         email: video.email || "",
         thumbnail: video.thumbnail || null,
         confidence: video.confidence ?? null,
+        link: video.links || null,
       })) || [];
+  };
 
   /* -------------------- FETCH FROM API WHEN USING FILTERS -------------------- */
   const fetchFilteredVideos = useCallback(
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
   confidenceBadge: {
     position: 'absolute',
     bottom: 4,
-    left: 3,
+    right: 4,
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 6,
     paddingVertical: 2,
