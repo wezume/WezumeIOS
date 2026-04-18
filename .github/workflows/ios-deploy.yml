@@ -21,9 +21,8 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
-
-      - name: Install Ruby dependencies
-        run: bundle install
+          bundler: "latest"
+          bundler-cache: true
 
       - name: Restore API key from secret
         run: |
