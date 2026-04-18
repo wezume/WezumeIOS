@@ -21,10 +21,13 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
-          bundler-cache: true
+
+      - name: Install Ruby dependencies
+        run: bundle install
 
       - name: Restore API key from secret
         run: |
+          mkdir -p fastlane
           echo "$ASC_KEY_CONTENT" | base64 --decode > fastlane/AuthKey_4YK92UN5LD.p8
         env:
           ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
