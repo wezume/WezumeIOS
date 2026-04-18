@@ -6,32 +6,22 @@ on:
   workflow_dispatch:
     inputs:
       lane:
-        description: "Fastlane lane: beta (TestFlight) or release (App Store)"
-        required: false
+        description: "beta or release"
         default: "beta"
 
 jobs:
   deploy:
     runs-on: macos-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-          bundler: "latest"
-          bundler-cache: true
+      - name: Install Fastlane
+        run: gem install fastlane cocoapods --no-document
 
-      - name: Restore API key from secret
+      - name: Restore API key
         run: |
           mkdir -p fastlane
-          echo "$ASC_KEY_CONTENT" | base64 --decode > fastlane/AuthKey_4YK92UN5LD.p8
-        env:
-          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          echo "${{ secrets.ASC_KEY_CONTENT }}" | base64 --decode > fastlane/AuthKey_4YK92UN5LD.p8
 
-      - name: Run Fastlane
-        run: bundle exec fastlane ${{ github.event.inputs.lane || 'beta' }}
-        env:
-          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+      - name: Deploy
+        run: fastlane ${{ github.event.inputs.lane || 'beta' }}
