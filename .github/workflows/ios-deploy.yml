@@ -1,0 +1,35 @@
+name: iOS Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "Fastlane lane: beta (TestFlight) or release (App Store)"
+        required: false
+        default: "beta"
+
+jobs:
+  deploy:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+
+      - name: Restore API key from secret
+        run: |
+          echo "$ASC_KEY_CONTENT" | base64 --decode > fastlane/AuthKey_4YK92UN5LD.p8
+        env:
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+
+      - name: Run Fastlane
+        run: bundle exec fastlane ${{ github.event.inputs.lane || 'beta' }}
+        env:
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
