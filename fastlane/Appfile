@@ -1,0 +1,5 @@
+app_identifier("com.kumaran.wezume")
+apple_team_id("S344K5H7WA")
+
+# App Store Connect API Key
+itc_team_id("6740565222")
