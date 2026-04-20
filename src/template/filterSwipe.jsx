@@ -31,6 +31,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import apiClient from './api';
+import env from './env';
 
 const { height: windowHeight } = Dimensions.get('window');
 
@@ -184,21 +185,21 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked, loggedInUserRole })
   const currentSubtitle = subtitles.find(sub => currentTime >= sub.startTime && currentTime <= sub.endTime)?.text || '';
 
   const handleShare = useCallback(async () => {
-    if (!thumbnail) return Alert.alert('Error', 'Thumbnail is not available.');
-    const localThumbnailPath = `${RNFS.CachesDirectoryPath}/share_thumbnail_${Date.now()}.jpg`;
     try {
-      await RNFS.downloadFile({ fromUrl: thumbnail, toFile: localThumbnailPath }).promise;
+      const target = encodeURIComponent(`app://api/videos/user/${uri}/${id}`);
+      const shareLink = `${env.baseURL}/api/users/share?target=${target}`;
+
       await Share.open({
         title: 'Share User Video',
         message: `Check out this video from ${firstName} on Wezume!`,
-        url: `file://${localThumbnailPath}`,
+        url: shareLink,
       });
     } catch (error) {
       if (error.code !== 'ECANCELLED') {
         Alert.alert('Error', 'Could not share the video.');
       }
     }
-  }, [thumbnail, firstName]);
+  }, [thumbnail, firstName, uri, id]);
 
   const handleEmail = () => {
     if (email) {

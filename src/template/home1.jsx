@@ -237,36 +237,28 @@ const Home1 = () => {
    * using useCallback, and having necessary dependencies.
    */
   const handleShare = useCallback(async () => {
-    if (!thumbnail || !firstName || !videoUri || !videoId) {
+    if (!firstName || !videoUri || !videoId) {
       Alert.alert('Error', 'Cannot share video at this time. Missing data.');
       return;
     }
 
+    const target = encodeURIComponent(`app://api/videos/user/${videoUri}/${videoId}`);
+    const shareLink = `${env.baseURL}/api/users/share?target=${target}`;
+
     try {
-      const thumbnailUrl = thumbnail;
-      const localThumbnailPath = `${RNFS.CachesDirectoryPath}/thumbnail.jpg`;
+      // url must be the web link so recipients can tap it
+      const shareOptions = {
+        title: 'Share User Video',
+        message: `Check out this video shared by ${firstName}`,
+        url: shareLink,
+      };
 
-      const downloadResult = await RNFS.downloadFile({
-        fromUrl: thumbnailUrl,
-        toFile: localThumbnailPath,
-      }).promise;
-
-      if (downloadResult.statusCode === 200) {
-        const shareOptions = {
-          title: 'Share User Video',
-          // Ensure env.baseURL is defined for a functional link
-          message: `Check out this video shared by ${firstName}\n\n${env.baseURL}/api/users/share?target=app://api/videos/user/${videoUri}/${videoId}`,
-          url: `file://${localThumbnailPath}`,
-        };
-
-        await Share.open(shareOptions);
-      } else {
-        console.error('Failed to download the thumbnail. Status code:', downloadResult.statusCode);
-        Alert.alert('Error', 'Unable to download the thumbnail for sharing.');
-      }
+      await Share.open(shareOptions);
     } catch (error) {
-      console.error('Error sharing video:', error);
-      Alert.alert('Error', 'Error occurred during sharing.');
+      if (error.code !== 'ECANCELLED') {
+        console.error('Error sharing video:', error);
+        Alert.alert('Error', 'Error occurred during sharing.');
+      }
     }
   }, [thumbnail, firstName, videoUri, videoId]);
 
