@@ -266,7 +266,7 @@ const VideoScreen = () => {
       if (downloadResult.statusCode === 200) {
         const shareOptions = {
           title: 'Share User Video',
-          message: `Check out this video shared by ${firstName}\n\n${env.baseURL}/users/share?target=app://api/videos/user/${videoUri}/${videoId}`,
+          message: `Check out this video shared by ${firstName}\n\n${env.baseURL}/users/share?target=app://api/videos/user/${videoId}`,
           url: `file://${localThumbnailPath}`, // Share the local thumbnail image
         };
 

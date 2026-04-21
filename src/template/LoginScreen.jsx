@@ -301,7 +301,7 @@ const LoginScreen = () => {
       formData.append('lastName', ''); // LinkedIn usually only gives one name in given_name/family_name
       formData.append('email', email);
       formData.append('jobOption', role);
-      formData.append('phoneNumber', '0000000000'); // Placeholder
+      formData.append('phoneNumber', `9${Date.now().toString().slice(-9)}`); // Unique placeholder
       formData.append('password', 'LinkedInLogin_Secure'); // Placeholder
 
       // 2. Perform the Signup
