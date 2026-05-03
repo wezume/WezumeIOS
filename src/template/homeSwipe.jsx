@@ -33,6 +33,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import apiClient from './api';
+import env from './env';
 
 const { height: windowHeight } = Dimensions.get('window');
 
@@ -192,10 +193,11 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
 
     try {
       await RNFS.downloadFile({ fromUrl: thumbnail, toFile: localThumbnailPath }).promise;
+      const target = encodeURIComponent(`app://api/videos/user/${uri}/${id}`);
+      const shareLink = `${env.baseURL}/api/users/share?target=${target}`;
       await Share.open({
         title: 'Share User Video',
-        // FIX: Access firstName directly from props
-        message: `Check out this video from ${firstName} on Wezume!`,
+        message: `Check out this video from ${firstName} on Wezume!\n${shareLink}`,
         url: `file://${localThumbnailPath}`,
       });
     } catch (error) {
@@ -203,7 +205,7 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
         Alert.alert('Error', 'Could not share the video.');
       }
     }
-  }, [thumbnail, firstName]);
+  }, [thumbnail, firstName, uri, id]);
 
   const handleOpenLink = () => {
     setShowLinkModal(true);
