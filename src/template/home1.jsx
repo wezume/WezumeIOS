@@ -242,8 +242,7 @@ const Home1 = () => {
       return;
     }
 
-    const target = encodeURIComponent(`app://api/videos/user/${videoUri}/${videoId}`);
-    const shareLink = `${env.baseURL}/api/users/share?target=${target}`;
+    const shareLink = `${env.baseURL}/api/users/share?target=app://api/videos/user/${videoUri}/${videoId}`;
 
     try {
       // url must be the web link so recipients can tap it

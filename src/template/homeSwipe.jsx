@@ -193,8 +193,7 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
 
     try {
       await RNFS.downloadFile({ fromUrl: thumbnail, toFile: localThumbnailPath }).promise;
-      const target = encodeURIComponent(`app://api/videos/user/${uri}/${id}`);
-      const shareLink = `${env.baseURL}/api/users/share?target=${target}`;
+      const shareLink = `${env.baseURL}/api/users/share?target=app://api/videos/user/${uri}/${id}`;
       await Share.open({
         title: 'Share User Video',
         message: `Check out this video from ${firstName} on Wezume!\n${shareLink}`,

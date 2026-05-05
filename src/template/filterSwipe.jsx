@@ -186,8 +186,7 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked, loggedInUserRole })
 
   const handleShare = useCallback(async () => {
     try {
-      const target = encodeURIComponent(`app://api/videos/user/${uri}/${id}`);
-      const shareLink = `${env.baseURL}/api/users/share?target=${target}`;
+      const shareLink = `${env.baseURL}/api/users/share?target=app://api/videos/user/${uri}/${id}`;
 
       await Share.open({
         title: 'Share User Video',
