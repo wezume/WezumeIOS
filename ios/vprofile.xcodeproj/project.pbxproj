@@ -401,7 +401,7 @@ REACT_NATIVE_XCODE="$REACT_NATIVE_PATH/scripts/react-native-xcode.sh"
 				<key>CLANG_ENABLE_MODULES</key>
 				<string>YES</string>
 				<key>CURRENT_PROJECT_VERSION</key>
-				<string>65</string>
+				<string>66</string>
 				<key>DEVELOPMENT_TEAM</key>
 				<string>S344K5H7WA</string>
 				<key>ENABLE_BITCODE</key>
@@ -416,7 +416,7 @@ REACT_NATIVE_XCODE="$REACT_NATIVE_PATH/scripts/react-native-xcode.sh"
 					<string>@executable_path/Frameworks</string>
 				</array>
 				<key>MARKETING_VERSION</key>
-				<string>1.65</string>
+				<string>1.66</string>
 				<key>OTHER_LDFLAGS</key>
 				<array>
 					<string>$(inherited)</string>
@@ -450,7 +450,7 @@ REACT_NATIVE_XCODE="$REACT_NATIVE_PATH/scripts/react-native-xcode.sh"
 				<key>CLANG_ENABLE_MODULES</key>
 				<string>YES</string>
 				<key>CURRENT_PROJECT_VERSION</key>
-				<string>65</string>
+				<string>66</string>
 				<key>DEVELOPMENT_TEAM</key>
 				<string>S344K5H7WA</string>
 				<key>INFOPLIST_FILE</key>
@@ -463,7 +463,7 @@ REACT_NATIVE_XCODE="$REACT_NATIVE_PATH/scripts/react-native-xcode.sh"
 					<string>@executable_path/Frameworks</string>
 				</array>
 				<key>MARKETING_VERSION</key>
-				<string>1.65</string>
+				<string>1.66</string>
 				<key>OTHER_LDFLAGS</key>
 				<array>
 					<string>$(inherited)</string>
