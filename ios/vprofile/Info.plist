@@ -116,5 +116,7 @@
 	<array>
 		<string>applinks:wezume.in</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
