@@ -159,36 +159,36 @@ const DetailsScreen = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
+      await axios.post(
         `${env.baseURL}/api/users/signup/user`,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       );
 
-      const { token, verification_status } = response.data;
+      // Signup returns a plain string — auto-login to get a real token
+      const loginRes = await axios.post(`${env.baseURL}/api/login`, {
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      const { token } = loginRes.data;
+
+      if (!token) throw new Error('Account created but login failed. Please sign in manually.');
+
+      // Fetch user detail for userId + firstName
+      const detailRes = await axios.get(`${env.baseURL}/api/user-detail`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const { userId, firstName: fetchedName, profileUrl, profilePic, verification_status } = detailRes.data ?? {};
 
       await AsyncStorage.multiSet([
-        ['userToken',           token ?? ''],
-        ['verification_status', String(verification_status ?? '')],
+        ['userToken',           token],
         ['onboarded',           'true'],
+        ['userId',              String(userId ?? '')],
+        ['firstName',           fetchedName ?? name.trim()],
+        ['profileUrl',          profileUrl ?? profilePic ?? ''],
+        ['verification_status', String(verification_status ?? '')],
+        ['jobOption',           mappedRole],
       ]);
-
-      // Fetch user detail so HomeScreen has userId + firstName
-      try {
-        const detailRes = await axios.get(`${env.baseURL}/api/user-detail`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const { userId, firstName, profileUrl, profilePic } = detailRes.data ?? {};
-        if (userId) {
-          await AsyncStorage.multiSet([
-            ['userId',     String(userId)],
-            ['firstName',  firstName ?? name.trim()],
-            ['profileUrl', profileUrl ?? profilePic ?? ''],
-          ]);
-        }
-      } catch (_) {
-        // Non-fatal — HomeScreen will redirect to login if userId is still missing
-      }
 
       update({ step: 'done' });
       navigation.navigate('SuccessScreen');
