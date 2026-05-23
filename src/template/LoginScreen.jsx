@@ -41,7 +41,7 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   // Bob animation for mark image
   const bobAnim = useRef(new Animated.Value(0)).current;
