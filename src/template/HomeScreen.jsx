@@ -11,6 +11,7 @@ import {
   Platform,
   StatusBar,
   Text,
+  ScrollView,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -18,10 +19,17 @@ import Animated, {
   withTiming,
   withDelay,
 } from 'react-native-reanimated';
-import Header from './header';
+import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from './api';
+
+const WZ = {
+  blue: '#1E9BD7', blueDeep: '#0E5A8E', navy: '#0B2138', navySoft: '#1A2F47',
+  midnight: '#03152A', yellow: '#FFC93A', green: '#2CC6A1', coral: '#FF6B6B',
+  amber: '#FFB020', ink: '#0B1623', ink2: '#4A5A70', ink3: '#8B97A8',
+  line: '#E5ECF3', bg: '#F4F8FC', card: '#FFFFFF',
+};
 
 const CACHED_VIDEOS_KEY = 'cachedVideos';
 
@@ -70,7 +78,8 @@ const HomeScreen = () => {
   const [user, setUser] = useState({ userId: null, firstName: '' });
   const [videos, setVideos] = useState([]);
   const videosRef = useRef([]); // Ref to hold videos for stable callbacks
-  const [profileImage, setProfileImage] = useState(null);
+  const [_profileImage, setProfileImage] = useState(null); // loaded for future use (e.g. avatar in hero)
+  const [verificationStatus, setVerificationStatus] = useState(null);
 
   // --- Pagination and Refreshing State ---
   const [page, setPage] = useState(0);
@@ -156,6 +165,7 @@ const HomeScreen = () => {
       const userIdStr = await AsyncStorage.getItem('userId');
       const userId = userIdStr ? parseInt(userIdStr, 10) : null;
       const profilePic = await AsyncStorage.getItem('profileUrl');
+      const verStatus = await AsyncStorage.getItem('verification_status');
 
       if (!userId) {
         navigation.replace('LoginScreen');
@@ -164,6 +174,7 @@ const HomeScreen = () => {
       const currentUser = { firstName, userId };
       setUser(currentUser);
       setProfileImage(profilePic);
+      setVerificationStatus(verStatus);
 
       try {
         const cachedVideos = await AsyncStorage.getItem(CACHED_VIDEOS_KEY);
@@ -224,7 +235,7 @@ const HomeScreen = () => {
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    return <ActivityIndicator style={{ marginVertical: 20 }} size="large" color="#ffffff" />;
+    return <ActivityIndicator style={{ marginVertical: 20 }} size="large" color={WZ.blue} />;
   };
 
   // --- Back Button Handler ---
@@ -248,13 +259,92 @@ const HomeScreen = () => {
     return () => subscription.remove();
   }, [isFocused, navigation]);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'good morning';
+    if (hour < 17) return 'good afternoon';
+    return 'good evening';
+  };
 
   return (
     <View style={styles.container}>
-      <Header userName={user.firstName} profile={profileImage} />
-      <ImageBackground source={require('./assets/login.jpg')} style={styles.imageBackground}>
+      {/* Hero band */}
+      <LinearGradient
+        colors={['#2AB6EE', '#1E9BD7', '#0E5A8E']}
+        style={styles.heroBand}>
+        {/* Topbar row */}
+        <View style={styles.heroTopbar}>
+          <Text style={styles.heroWordmark}>wezume</Text>
+          <View style={styles.heroIcons}>
+            <TouchableOpacity style={styles.heroIconBtn}>
+              <Text style={styles.heroIconText}>⚡</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.heroIconBtn}>
+              <Text style={styles.heroIconText}>☰</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {/* Greeting */}
+        <View style={styles.greetingWrap}>
+          <Text style={styles.greetingSmall}>{getGreeting()}</Text>
+          <Text style={styles.greetingName}>{user.firstName} 👋</Text>
+        </View>
+      </LinearGradient>
+
+      {/* Cards section (overlapping hero) */}
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+
+        {/* Verify Banner (shown only if pending) */}
+        {verificationStatus === 'pending' && (
+          <View style={styles.verifyBanner}>
+            <Text style={styles.verifyBannerText}>
+              Your account is pending verification.
+            </Text>
+          </View>
+        )}
+
+        {/* AI Review headline card */}
+        <View style={styles.aiReviewCard}>
+          <Text style={styles.aiReviewLabel}>LATEST AI REVIEW</Text>
+          <Text style={styles.aiReviewHeadline}>
+            Record your first take to see your AI review.
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('HomeSwipe')}>
+            <Text style={styles.aiReviewCta}>See full review →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* AI Coach card */}
+        <LinearGradient
+          colors={[WZ.navy, WZ.navySoft]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.aiCoachCard}>
+          <Text style={styles.aiCoachLabel}>AI COACH</Text>
+          <Text style={styles.aiCoachTip}>
+            Record a take and get instant AI coaching.
+          </Text>
+          <TouchableOpacity
+            style={styles.aiCoachBtn}
+            onPress={() => navigation.navigate('CameraPage')}>
+            <Text style={styles.aiCoachBtnText}>Start take →</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+
+        {/* Discover section heading */}
+        <View style={styles.discoverHeader}>
+          <Text style={styles.discoverTitle}>Discover</Text>
+          <TouchableOpacity>
+            <Text style={styles.discoverSeeAll}>See all</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Video grid */}
         {isLoading && videos.length === 0 ? (
-          <ActivityIndicator size="large" color="#ffffff" />
+          <ActivityIndicator size="large" color={WZ.blue} style={{ marginTop: 40 }} />
         ) : (
           <FlatList
             data={videos}
@@ -275,9 +365,22 @@ const HomeScreen = () => {
             // ✅ FIX: Added props for pull-to-refresh
             onRefresh={handleRefresh}
             refreshing={isRefreshing}
+            scrollEnabled={false}
           />
         )}
-      </ImageBackground>
+      </ScrollView>
+
+      {/* Floating Record FAB */}
+      <TouchableOpacity
+        style={styles.fabWrap}
+        onPress={() => navigation.navigate('CameraPage')}
+        activeOpacity={0.85}>
+        <LinearGradient
+          colors={['#FF6B6B', '#FF8E58']}
+          style={styles.fab}>
+          <Text style={styles.fabIcon}>●</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -285,12 +388,158 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 25,
+    backgroundColor: WZ.bg,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  imageBackground: {
+  heroBand: {
+    height: 200,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingTop: Platform.OS === 'ios' ? 52 : 16,
+    paddingHorizontal: 20,
+    paddingBottom: 48,
+  },
+  heroTopbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  heroWordmark: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  heroIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroIconBtn: {
+    marginLeft: 14,
+  },
+  heroIconText: {
+    fontSize: 20,
+    color: '#fff',
+  },
+  greetingWrap: {
+    marginTop: 4,
+  },
+  greetingSmall: {
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 12,
+    fontWeight: '400',
+    textTransform: 'lowercase',
+    marginBottom: 2,
+  },
+  greetingName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  scrollArea: {
     flex: 1,
+    marginTop: -40,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 100,
+  },
+  verifyBanner: {
+    backgroundColor: WZ.amber,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  verifyBannerText: {
+    color: WZ.ink,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  aiReviewCard: {
+    backgroundColor: WZ.card,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 12,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  aiReviewLabel: {
+    color: WZ.blue,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  aiReviewHeadline: {
+    color: WZ.ink,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 10,
+    lineHeight: 24,
+  },
+  aiReviewCta: {
+    color: WZ.blue,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  aiCoachCard: {
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'column',
+  },
+  aiCoachLabel: {
+    color: WZ.yellow,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  aiCoachTip: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 14,
+    lineHeight: 20,
+  },
+  aiCoachBtn: {
+    backgroundColor: WZ.yellow,
+    borderRadius: 10,
+    height: 28,
+    paddingHorizontal: 14,
     justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  aiCoachBtnText: {
+    color: WZ.ink,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  discoverHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  discoverTitle: {
+    color: WZ.ink,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  discoverSeeAll: {
+    color: WZ.blue,
+    fontSize: 13,
+    fontWeight: '600',
   },
   videoItemContainer: {
     flex: 1 / 4,
@@ -318,13 +567,38 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    marginTop: 100,
+    marginTop: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyText: {
-    color: 'white',
-    fontSize: 18,
+    color: WZ.ink2,
+    fontSize: 16,
+  },
+  fabWrap: {
+    position: 'absolute',
+    bottom: 90,
+    right: 18,
+    borderRadius: 30,
+    borderWidth: 4,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fab: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fabIcon: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
   },
 });
 

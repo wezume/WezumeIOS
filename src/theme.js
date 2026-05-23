@@ -1,0 +1,17 @@
+export const WZ = {
+  blue: '#1E9BD7',
+  blueDeep: '#0E5A8E',
+  navy: '#0B2138',
+  navySoft: '#1A2F47',
+  midnight: '#03152A',
+  yellow: '#FFC93A',
+  green: '#2CC6A1',
+  coral: '#FF6B6B',
+  amber: '#FFB020',
+  ink: '#0B1623',
+  ink2: '#4A5A70',
+  ink3: '#8B97A8',
+  line: '#E5ECF3',
+  bg: '#F4F8FC',
+  card: '#FFFFFF',
+};

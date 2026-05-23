@@ -37,6 +37,11 @@ import RoleSelection from './src/template/roleSelection';
 import RoleSwipe from './src/template/roleSwipe';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Test from './src/template/test.jsx';
+import LandingScreen from './src/template/LandingScreen';
+import RoleSelectScreen from './src/template/RoleSelectScreen';
+import DetailsScreen from './src/template/DetailsScreen';
+import SuccessScreen from './src/template/SuccessScreen';
+import { OnboardingProvider } from './src/template/OnboardingContext';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -204,6 +209,7 @@ const App = () => {
 
   return (
     <GestureHandlerRootView>
+      <OnboardingProvider>
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Initial" component={Initial} />
@@ -235,8 +241,13 @@ const App = () => {
           <Stack.Screen name="RoleSwipe" component={RoleSwipe} />
           <Stack.Screen name="RecruiterDash" component={RecruiterDash} />
           <Stack.Screen name="Test" component={Test} />
+          <Stack.Screen name="LandingScreen" component={LandingScreen} />
+          <Stack.Screen name="RoleSelectScreen" component={RoleSelectScreen} />
+          <Stack.Screen name="DetailsScreen" component={DetailsScreen} />
+          <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+      </OnboardingProvider>
       <AppUpdateChecker />
     </GestureHandlerRootView>
   );

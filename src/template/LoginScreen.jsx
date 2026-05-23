@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -8,19 +8,15 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
-  Image,
   Dimensions,
-  ImageBackground,
   Button,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  ScrollView,
+  StatusBar,
+  Animated,
+  Platform,
 } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import LinearGradient from 'react-native-linear-gradient';
 import axios from 'axios';
 import { WebView } from 'react-native-webview';
@@ -28,7 +24,14 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import env from './env';
 
-const { width, height } = Dimensions.get('window');
+const { width: _width } = Dimensions.get('window'); // kept for potential future use
+
+const WZ = {
+  blue: '#1E9BD7', blueDeep: '#0E5A8E', navy: '#0B2138', navySoft: '#1A2F47',
+  midnight: '#03152A', yellow: '#FFC93A', green: '#2CC6A1', coral: '#FF6B6B',
+  amber: '#FFB020', ink: '#0B1623', ink2: '#4A5A70', ink3: '#8B97A8',
+  line: '#E5ECF3', bg: '#F4F8FC', card: '#FFFFFF',
+};
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -38,29 +41,19 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [remember, setRemember] = useState(false);
 
-  const rotateX = useSharedValue(0);
-  const rotateY = useSharedValue(0);
+  // Bob animation for mark image
+  const bobAnim = useRef(new Animated.Value(0)).current;
 
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      rotateY.value = interpolate(event.translationX, [-width / 2, width / 2], [-10, 10]);
-      rotateX.value = interpolate(event.translationY, [-height / 2, height / 2], [10, -10]);
-    })
-    .onEnd(() => {
-      rotateX.value = withTiming(0, { duration: 500 });
-      rotateY.value = withTiming(0, { duration: 500 });
-    });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { perspective: 300 },
-        { rotateX: `${rotateX.value}deg` },
-        { rotateY: `${rotateY.value}deg` },
-      ],
-    };
-  });
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bobAnim, { toValue: -8, duration: 1800, useNativeDriver: true }),
+        Animated.timing(bobAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [bobAnim]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -335,73 +328,135 @@ const LoginScreen = () => {
   // --------------------------------------------------------------------
 
   return (
-    <ImageBackground
-      style={styles.backgroundImage}
-      source={require('./assets/Background-01.jpg')}
-      resizeMode="cover">
+    <LinearGradient
+      colors={['#1E9BD7', '#0E5A8E', '#06243F']}
+      style={{ flex: 1 }}
+      start={{ x: 0.3, y: 0 }}
+      end={{ x: 0.7, y: 1 }}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled">
 
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.glassContainer, animatedStyle]}>
-            <BlurView
-              style={styles.absolute}
-              blurType="xlight"
-              blurAmount={8}
-              reducedTransparencyFallbackColor="white"
-            />
-            <Image style={styles.img2} source={require('./assets/logopng.png')} />
-            <Text style={styles.loginhead}>Login</Text>
-
-            <TouchableOpacity style={styles.linkedinButton} onPress={handleLinkedInLogin}>
-              <Text style={styles.linkedinButtonText}>LinkedIn</Text>
-            </TouchableOpacity>
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.horizontalLine} />
-              <Text style={styles.dividerText}>or Login with</Text>
-              <View style={styles.horizontalLine} />
+            {/* Topbar */}
+            <View style={styles.topbar}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('LandingScreen')}
+                style={styles.backBtn}>
+                <Text style={styles.backArrow}>{'←'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.wordmark}>wezume</Text>
+              <View style={{ width: 44 }} />
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#333"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#333"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <TouchableOpacity onPress={() => navigation.navigate('ForgetPassword')}>
-              <Text style={styles.forgotPasswordText}>Forgot Password ?</Text>
-            </TouchableOpacity>
+            {/* Splash mark with bob animation */}
+            <View style={styles.markWrap}>
+              <Animated.Image
+                source={require('./assets/wezume-mark.webp')}
+                style={[styles.markImg, { transform: [{ translateY: bobAnim }] }]}
+                resizeMode="contain"
+              />
+            </View>
 
-            <LinearGradient colors={['#70bdff', '#2e80d8']} style={styles.loginButtonGradient}>
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginButtonText}>Login</Text>
+            {/* Strapline */}
+            <View style={styles.straplineRow}>
+              <View style={styles.strapLine} />
+              <Text style={styles.strapText}>SPEAK UP. STAND OUT.</Text>
+              <View style={styles.strapLine} />
+            </View>
+
+            {/* Headline */}
+            <Text style={styles.headline}>
+              Welcome{' '}
+              <Text style={{ color: WZ.yellow }}>back.</Text>
+            </Text>
+
+            {/* Glass form card */}
+            <View style={styles.glassCard}>
+
+              {/* Email input */}
+              <TextInput
+                style={styles.darkInput}
+                placeholder="Email"
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              {/* Password input */}
+              <TextInput
+                style={styles.darkInput}
+                placeholder="Password"
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+
+              {/* Remember me + Forgot row */}
+              <View style={styles.rememberRow}>
+                <TouchableOpacity
+                  style={styles.rememberLeft}
+                  onPress={() => setRemember(prev => !prev)}
+                  activeOpacity={0.7}>
+                  <View style={[styles.checkbox, remember && styles.checkboxChecked]}>
+                    {remember && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text style={styles.rememberText}>Remember me</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('ForgetPassword')}>
+                  <Text style={styles.forgotText}>Forgot?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Primary CTA */}
+              <TouchableOpacity onPress={handleLogin} activeOpacity={0.85} disabled={loading}>
+                <LinearGradient
+                  colors={['#FFC93A', '#FF9F43']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.ctaGradient}>
+                  {loading ? (
+                    <ActivityIndicator color={WZ.ink} size="small" />
+                  ) : (
+                    <Text style={styles.ctaText}>Sign in →</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
-            </LinearGradient>
 
-            <TouchableOpacity onPress={() => navigation.navigate('SignupScreen')}>
-              <Text style={styles.createAccount}>
-                Don't Have An Account ? <Text style={{ color: '#0052cc' }}>SignUp</Text>
+              {/* Divider */}
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerLabel}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* LinkedIn button */}
+              <TouchableOpacity style={styles.linkedinBtn} onPress={handleLinkedInLogin} activeOpacity={0.8}>
+                <Text style={styles.linkedinBtnText}>Continue with LinkedIn</Text>
+              </TouchableOpacity>
+
+            </View>
+
+            {/* Footer */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('LandingScreen')}
+              style={styles.footerWrap}>
+              <Text style={styles.footerText}>
+                New here?{' '}
+                <Text style={styles.footerCta}>Make your wezume →</Text>
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('PlacemenntSignup')}>
-              <Text style={styles.createAccount}>
-                Signup as placement officer? <Text style={{ color: '#0052cc' }}>Click Here</Text>
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </GestureDetector>
-      </GestureHandlerRootView>
+
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
 
       {loading && (
         <View style={styles.loadingOverlay}>
@@ -409,9 +464,12 @@ const LoginScreen = () => {
         </View>
       )}
 
-      {/* Conditional rendering of modals for performance */}
       {showLinkedInModal && (
-        <Modal animationType="slide" transparent={true} visible={showLinkedInModal} onRequestClose={() => setShowLinkedInModal(false)}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showLinkedInModal}
+          onRequestClose={() => setShowLinkedInModal(false)}>
           <View style={styles.modalContainer}>
             <WebView
               source={{ uri: 'https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=869zn5otx0ejyt&redirect_uri=https://www.linkedin.com/developers/tools/oauth/redirect&scope=profile%20email%20openid' }}
@@ -424,7 +482,11 @@ const LoginScreen = () => {
       )}
 
       {showRoleSelection && (
-        <Modal animationType="fade" transparent={true} visible={showRoleSelection} onRequestClose={() => setShowRoleSelection(false)}>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showRoleSelection}
+          onRequestClose={() => setShowRoleSelection(false)}>
           <View style={styles.roleModalOverlay}>
             <View style={styles.roleSelectionContainer}>
               <Text style={styles.roleTitle}>Select Your Role</Text>
@@ -440,44 +502,225 @@ const LoginScreen = () => {
           </View>
         </Modal>
       )}
-    </ImageBackground>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: { flex: 1, justifyContent: 'center', width: '100%' },
-  glassContainer: {
-    width: '95%',
-    borderRadius: 20,
-    padding: 20,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderWidth: 1.5,
-    marginTop: '40%',
-    alignSelf: 'center'
+  topbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-
-  img2: { width: 150, height: 75, alignSelf: 'center', marginBottom: 10 },
-  loginhead: { textAlign: 'center', fontSize: 28, fontWeight: 'bold', color: '#000', marginBottom: 20, marginTop: '-10%' },
-  input: { backgroundColor: 'rgba(255, 255, 255, 1)', borderWidth: 0.3, padding: 12, marginBottom: 12, borderRadius: 10, borderColor: '#0387e0', color: '#000', fontSize: 16, fontWeight: '500' },
-  forgotPasswordText: { color: '#000', textAlign: 'right', fontSize: 14, paddingBottom: 15, fontWeight: '600' },
-  loginButtonGradient: { borderRadius: 10, elevation: 5, marginBottom: 15 },
-  loginButton: { paddingVertical: 12, justifyContent: 'center', alignItems: 'center' },
-  loginButtonText: { fontWeight: 'bold', color: '#ffffff', fontSize: 18 },
-  createAccount: { color: '#000', marginTop: 10, textAlign: 'center', fontWeight: '500', fontSize: 14 },
-  linkedinButton: { backgroundColor: '#0077B5', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  linkedinButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  horizontalLine: { flex: 1, height: 1, backgroundColor: 'rgba(0, 0, 0, 0.2)' },
-  dividerText: { marginHorizontal: 10, fontSize: 14, fontWeight: '500', color: '#333' },
-  loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: 'center', alignItems: 'center' },
-  modalContainer: { flex: 1, marginTop: 50 },
-  roleModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  roleSelectionContainer: { width: '85%', padding: 20, backgroundColor: 'white', borderRadius: 15, alignItems: 'center' },
-  roleTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  roleButton: { padding: 15, marginVertical: 8, width: '100%', backgroundColor: '#2e80d8', borderRadius: 10, alignItems: 'center' },
-  roleText: { fontSize: 18, color: '#ffffff', fontWeight: '600' },
+  backBtn: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+  },
+  backArrow: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '600',
+  },
+  wordmark: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  markWrap: {
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  markImg: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+  },
+  straplineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 32,
+  },
+  strapLine: {
+    width: 40,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.30)',
+  },
+  strapText: {
+    color: WZ.yellow,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginHorizontal: 10,
+  },
+  headline: {
+    color: '#fff',
+    fontSize: 30,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  glassCard: {
+    marginHorizontal: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 24,
+  },
+  darkInput: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    height: 52,
+    borderRadius: 14,
+    color: '#fff',
+    paddingHorizontal: 16,
+    fontSize: 15,
+    marginBottom: 14,
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  rememberLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxChecked: {
+    backgroundColor: WZ.yellow,
+    borderColor: WZ.yellow,
+  },
+  checkmark: {
+    color: WZ.ink,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  rememberText: {
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 13,
+  },
+  forgotText: {
+    color: WZ.yellow,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  ctaGradient: {
+    height: 54,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  ctaText: {
+    color: WZ.ink,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  dividerLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginHorizontal: 12,
+  },
+  linkedinBtn: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  linkedinBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  footerWrap: {
+    alignItems: 'center',
+    paddingBottom: 32,
+  },
+  footerText: {
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 14,
+  },
+  footerCta: {
+    color: WZ.yellow,
+    fontWeight: '700',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    marginTop: 50,
+  },
+  roleModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  roleSelectionContainer: {
+    width: '85%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 15,
+    alignItems: 'center',
+  },
+  roleTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  roleButton: {
+    padding: 15,
+    marginVertical: 8,
+    width: '100%',
+    backgroundColor: '#2e80d8',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  roleText: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
 });
 
 export default LoginScreen;

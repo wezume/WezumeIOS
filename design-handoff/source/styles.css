@@ -1,0 +1,145 @@
+/* Wezume design system tokens */
+:root {
+  --w-blue-50: #EAF6FD;
+  --w-blue-100: #C9E7F7;
+  --w-blue-200: #8FCFEF;
+  --w-blue-400: #3CA8DD;
+  --w-blue-500: #1B8AC9;
+  --w-blue-600: #0F6FA8;
+  --w-blue-700: #0A5380;
+  --w-blue-900: #06304A;
+
+  --w-ink-900: #0B1623;
+  --w-ink-700: #1F2D3F;
+  --w-ink-500: #4A5A70;
+  --w-ink-300: #8B97A8;
+  --w-ink-100: #DDE3EC;
+
+  --w-bg: #F4F8FC;
+  --w-card: #FFFFFF;
+
+  --w-yellow: #FFD43B;
+  --w-coral: #FF6B6B;
+  --w-mint: #2CC6A1;
+  --w-violet: #6B6BFF;
+  --w-pink: #FF7AB6;
+
+  --w-shadow-sm: 0 1px 2px rgba(11,22,35,0.06), 0 2px 6px rgba(11,22,35,0.04);
+  --w-shadow-md: 0 4px 10px rgba(11,22,35,0.06), 0 12px 32px rgba(11,22,35,0.08);
+  --w-shadow-lg: 0 10px 30px rgba(11,22,35,0.10), 0 30px 60px rgba(11,22,35,0.12);
+
+  --w-radius-sm: 10px;
+  --w-radius: 16px;
+  --w-radius-lg: 24px;
+  --w-radius-xl: 32px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: #EEF3F8;
+  color: var(--w-ink-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Wezume brand pattern background — repeating mic + briefcase + chart icons */
+.w-pattern {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'><g fill='none' stroke='white' stroke-opacity='0.12' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='30' cy='30' r='10'/><path d='M28 27v6M32 27v6'/><circle cx='90' cy='60' r='14'/><path d='M86 54l8 8M94 54l-8 8'/><rect x='150' y='30' width='28' height='22' rx='3'/><path d='M158 30v-4h12v4'/><path d='M30 100l8 -8 8 8 8 -8 8 8'/><circle cx='130' cy='110' r='12'/><path d='M125 110l4 4 6 -8'/><rect x='180' y='90' width='24' height='30' rx='3'/><path d='M186 100h12M186 108h12M186 116h8'/><path d='M50 170l6 -10 6 10 6 -16 6 16'/><circle cx='110' cy='180' r='10'/><rect x='160' y='160' width='30' height='24' rx='3'/><path d='M165 168h20M165 174h20M165 180h12'/></g></svg>");
+}
+
+/* Marquee animation for collage strips */
+@keyframes w-marquee-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes w-marquee-x-rev {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@keyframes w-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50%      { transform: scale(1.4); opacity: 0; }
+}
+@keyframes w-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes w-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes w-spin-slow { to { transform: rotate(360deg); } }
+
+/* Reusable input */
+.w-input {
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
+  border: 1.5px solid var(--w-ink-100);
+  background: #fff;
+  padding: 0 16px 0 46px;
+  font: 500 15px/1 Inter, sans-serif;
+  color: var(--w-ink-900);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.w-input:focus {
+  border-color: var(--w-blue-500);
+  box-shadow: 0 0 0 4px rgba(27,138,201,0.12);
+}
+.w-input::placeholder { color: var(--w-ink-300); }
+
+.w-btn {
+  height: 52px;
+  border-radius: 14px;
+  border: 0;
+  font: 700 15px/1 Inter, sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: transform .08s ease, box-shadow .15s ease, background .15s;
+}
+.w-btn:active { transform: translateY(1px) scale(0.99); }
+
+.w-btn-primary {
+  background: linear-gradient(180deg, #2AA3E2 0%, #1577B5 100%);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 8px 20px rgba(21,119,181,0.35);
+}
+.w-btn-primary:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 10px 24px rgba(21,119,181,0.45); }
+
+.w-btn-ghost {
+  background: rgba(255,255,255,0.9);
+  color: var(--w-ink-700);
+  border: 1.5px solid var(--w-ink-100);
+}
+
+.w-btn-dark {
+  background: #0B1623;
+  color: #fff;
+}
+
+.w-link { color: var(--w-blue-600); font-weight: 600; cursor: pointer; }
+
+.w-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: 600 12px/1 Inter, sans-serif;
+}
+
+/* Hide scrollbars within phone screens */
+.w-screen::-webkit-scrollbar { display: none; }
+.w-screen { scrollbar-width: none; }
