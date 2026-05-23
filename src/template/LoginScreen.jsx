@@ -106,20 +106,12 @@ const LoginScreen = () => {
         await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic);
 
         switch (jobOption) {
-          case 'Employee':
-          case 'Entrepreneur':
-          case 'Freelancer':
-            console.log('🚀 Redirecting to Edit (Employee/Entrepreneur/Freelancer)');
-            navigation.navigate('Edit');
-            break;
           case 'Employer':
           case 'Investor':
-            console.log('🏠 Redirecting to Edit (Employer/Investor)');
-            navigation.navigate('Edit');
+            navigation.navigate('RecruiterDash');
             break;
           default:
-            console.error('⚠️ Navigation Failed: Unknown Role!', jobOption);
-            Alert.alert('Login Error', `Unknown or unrecognized user role: ${jobOption}`);
+            navigation.navigate('HomeScreen');
             break;
         }
       }
@@ -219,18 +211,25 @@ const LoginScreen = () => {
       const userDetails = userDetailsResponse.data;
       if (!userDetails || !userDetails.userId) throw new Error('User data is incomplete.');
 
-      const { userId, firstName, email: userEmail, industry, videos, college, profileUrl, profilePic, jobid } = userDetails;
+      const { userId, firstName, email: userEmail, industry, videos, college, profileUrl, profilePic } = userDetails;
       const videoId = videos?.[0]?.videoId || null;
 
-      if (jobOption === 'placementdrive' || jobOption === 'academy' || jobOption === 'placement') {
-        await savePlacementLoginData(userId, firstName, userEmail, college, jobOption, profileUrl || profilePic, jobid);
-        console.log('🔄 Existing LinkedIn user → Edit screen');
-        navigation.navigate('Edit');
-      } else {
-        await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic);
-        console.log('🏠 Existing LinkedIn user → Edit screen');
-        navigation.navigate('Edit');
+      if (
+        jobOption === 'Employer' ||
+        jobOption === 'Investor' ||
+        jobOption === 'placementdrive' ||
+        jobOption === 'academy' ||
+        jobOption === 'placement'
+      ) {
+        Alert.alert(
+          'LinkedIn login unavailable',
+          'LinkedIn sign-in is only available for Jobseekers, Freelancers and Entrepreneurs. Please use your email and password.',
+        );
+        return;
       }
+
+      await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic);
+      navigation.navigate('HomeScreen');
     } catch (loginError) {
       console.error('❌ LinkedIn existing user login failed:', loginError.response?.data || loginError.message);
       Alert.alert('Login Failed', 'Could not sign you in. Please try again.');
@@ -356,7 +355,7 @@ const LoginScreen = () => {
             {/* Splash mark with bob animation */}
             <View style={styles.markWrap}>
               <Animated.Image
-                source={require('./assets/wezume-mark.webp')}
+                source={require('../assets/brand/wezume-mark.webp')}
                 style={[styles.markImg, { transform: [{ translateY: bobAnim }] }]}
                 resizeMode="contain"
               />
@@ -490,7 +489,7 @@ const LoginScreen = () => {
           <View style={styles.roleModalOverlay}>
             <View style={styles.roleSelectionContainer}>
               <Text style={styles.roleTitle}>Select Your Role</Text>
-              {['Employer', 'Freelancer', 'Employee', 'Entrepreneur', 'Investor'].map((role) => (
+              {['Employee', 'Freelancer', 'Entrepreneur'].map((role) => (
                 <TouchableOpacity
                   key={role}
                   style={styles.roleButton}

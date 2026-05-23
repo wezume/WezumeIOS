@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -16,11 +17,11 @@ import MarqueeAvatars from '../components/MarqueeAvatars';
 import { useOnboarding } from './OnboardingContext';
 
 const ROLES = [
-  { id: 'jobseeker',     label: 'Jobseeker',     emoji: '🎤', desc: 'Find your next role',       color: WZ.blue },
-  { id: 'freelancer',    label: 'Freelancer',    emoji: '💻', desc: 'Win your next project',     color: WZ.green },
-  { id: 'entrepreneur',  label: 'Entrepreneur',  emoji: '🚀', desc: 'Pitch your vision',         color: WZ.coral },
-  { id: 'recruiter',     label: 'Recruiter',     emoji: '🔍', desc: 'Find top talent',           color: WZ.amber },
-  { id: 'investor',      label: 'Investor',      emoji: '💼', desc: 'Spot the next big thing',   color: '#9B59B6' },
+  { id: 'jobseeker',     label: 'Jobseeker',     emoji: '🎤', desc: 'Land your next role',   color: WZ.blue },
+  { id: 'freelancer',    label: 'Freelancer',    emoji: '💻', desc: 'Show your craft',        color: WZ.green },
+  { id: 'entrepreneur',  label: 'Entrepreneur',  emoji: '🚀', desc: 'Pitch your venture',     color: WZ.coral },
+  { id: 'recruiter',     label: 'Recruiter',     emoji: '🔍', desc: 'Hire by role',           color: WZ.amber },
+  { id: 'investor',      label: 'Investor',      emoji: '💼', desc: 'Back the next one',      color: '#9B59B6' },
 ];
 
 const RoleSelectScreen = () => {
@@ -50,9 +51,13 @@ const RoleSelectScreen = () => {
         onPress={() => handleSelectRole(tile)}
         activeOpacity={0.75}
       >
-        <Text style={styles.tileEmoji}>{tile.emoji}</Text>
-        <Text style={styles.tileLabel}>{tile.label}</Text>
-        <Text style={styles.tileDesc}>{tile.desc}</Text>
+        <View style={[styles.tileIconBox, { backgroundColor: tile.color + '28' }]}>
+          <Text style={styles.tileEmoji}>{tile.emoji}</Text>
+        </View>
+        <View style={styles.tileMeta}>
+          <Text style={styles.tileLabel}>{tile.label}</Text>
+          <Text style={styles.tileDesc}>{tile.desc}</Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -73,6 +78,12 @@ const RoleSelectScreen = () => {
           >
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
+          <Image
+            source={require('../assets/brand/wezume-wordmark-trimmed.png')}
+            style={styles.wordmark}
+            resizeMode="contain"
+            tintColor="#fff"
+          />
           <Text style={styles.stepLabel}>Step 1 of 3</Text>
           <StepDots total={3} current={1} />
         </View>
@@ -115,11 +126,13 @@ const RoleSelectScreen = () => {
               <RoleTile tile={ROLES[1]} />
             </View>
             <View style={styles.gridRowCenter}>
-              <View style={styles.tileCentered}>
+              <View style={styles.tileCenteredWrap}>
                 <RoleTile tile={ROLES[2]} />
               </View>
             </View>
           </View>
+
+          <Text style={styles.hint}>Tap a card to continue</Text>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -137,13 +150,24 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 10,
   },
-  backBtn: { padding: 4 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backArrow: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  stepLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 13, marginRight: 4 },
+  wordmark: { height: 36, width: 126 },
+  stepLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 13, marginRight: 4, marginLeft: 'auto' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    justifyContent: 'center',
     marginTop: 16,
     marginBottom: 6,
   },
@@ -153,6 +177,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontSize: 14,
     marginBottom: 24,
+    textAlign: 'center',
   },
   grid: { gap: 12 },
   sectionRow: {
@@ -175,22 +200,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  gridRowCenter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  tileCentered: { width: '48%' },
   tile: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 16,
     padding: 14,
+    minHeight: 80,
   },
-  tileEmoji: { fontSize: 28, marginBottom: 6 },
-  tileLabel: { color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  tileDesc: { color: 'rgba(255,255,255,0.6)', fontSize: 11 },
+  tileIconBox: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  tileEmoji: { fontSize: 24 },
+  tileMeta: { flex: 1 },
+  tileLabel: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  tileDesc: { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
+  gridRowCenter: { flexDirection: 'row', justifyContent: 'center' },
+  tileCenteredWrap: { width: '65%' },
+  hint: { textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '500', marginTop: 8 },
 });
 
 export default RoleSelectScreen;

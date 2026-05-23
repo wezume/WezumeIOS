@@ -40,7 +40,7 @@ const SuccessScreen = () => {
   };
 
   return (
-    <LinearGradient colors={['#2AB6EE', '#1E9BD7', '#0E5A8E']} style={styles.container}>
+    <LinearGradient colors={['#1E9BD7', '#0E5A8E', '#06243F']} locations={[0, 0.5, 1]} style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={styles.safe}>
         {/* Step indicator */}
@@ -69,20 +69,36 @@ const SuccessScreen = () => {
           </View>
 
           {/* Personalized welcome */}
-          <Text style={styles.welcome}>Welcome, {roleDisplay}.</Text>
+          <Text style={styles.welcome}>
+            <Text>Welcome, <Text style={{color:'#fff',fontWeight:'700'}}>{roleDisplay}</Text>.</Text>
+          </Text>
+          <Text style={styles.welcomeSub}>Now let's record your first take — 60 seconds, no script needed.</Text>
 
           {/* Glass checklist card */}
           <View style={styles.card}>
-            <Text style={styles.checkDone}>✓  Account created</Text>
-
-            <View style={styles.nextRow}>
-              <View style={styles.nextAccent} />
-              <View style={styles.nextContent}>
-                <Text style={styles.nextStep}>2 · Record your first take</Text>
+            {[
+              { done: true,  next: false, num: 1, label: 'Account created' },
+              { done: false, next: true,  num: 2, label: 'Record your first take' },
+              { done: false, next: false, num: 3, label: 'Get your AI Review' },
+            ].map((item, i) => (
+              <View key={i} style={[styles.checkRow, i < 2 && styles.checkRowBorder]}>
+                <View style={[styles.checkCircle,
+                  item.done && { backgroundColor: WZ.green },
+                  item.next && { backgroundColor: WZ.yellow },
+                  !item.done && !item.next && { backgroundColor: 'rgba(255,255,255,0.1)' },
+                ]}>
+                  <Text style={[styles.checkNum, { color: item.done || item.next ? WZ.ink : 'rgba(255,255,255,0.4)' }]}>
+                    {item.done ? '✓' : item.num}
+                  </Text>
+                </View>
+                <Text style={[styles.checkLabel,
+                  item.done && { color: 'rgba(255,255,255,0.5)', textDecorationLine: 'line-through' },
+                  item.next && { color: '#fff', fontWeight: '700' },
+                  !item.done && !item.next && { color: 'rgba(255,255,255,0.45)' },
+                ]}>{item.label}</Text>
+                {item.next && <Text style={styles.nextBadge}>NEXT</Text>}
               </View>
-            </View>
-
-            <Text style={styles.futureStep}>3 · Get your AI Review</Text>
+            ))}
           </View>
         </View>
 
@@ -125,22 +141,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   mark: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
   badge: {
     position: 'absolute',
     bottom: -4,
     right: -4,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: WZ.yellow,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#1E9BD7',
+    borderWidth: 3,
+    borderColor: '#06243F',
   },
   badgeTick: { color: WZ.ink, fontSize: 13, fontWeight: '800' },
   headlineRow: {
@@ -148,13 +164,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginBottom: 8,
   },
-  headlineWhite: { color: '#fff', fontSize: 30, fontWeight: '800' },
-  headlineYellow: { color: WZ.yellow, fontSize: 30, fontWeight: '800' },
+  headlineWhite: { color: '#fff', fontSize: 34, fontWeight: '800' },
+  headlineYellow: { color: WZ.yellow, fontSize: 34, fontWeight: '800' },
   welcome: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 15,
-    marginBottom: 28,
+    marginBottom: 8,
   },
+  welcomeSub: { color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 280, marginBottom: 24 },
   card: {
     width: '100%',
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -162,34 +179,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
     borderRadius: 18,
     padding: 16,
-    gap: 14,
   },
-  checkDone: {
-    color: WZ.green,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  nextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  nextAccent: {
-    width: 3,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: WZ.yellow,
-  },
-  nextContent: { flex: 1 },
-  nextStep: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  futureStep: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 14,
-  },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  checkRowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' },
+  checkCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  checkNum: { fontSize: 11, fontWeight: '800' },
+  checkLabel: { flex: 1, fontSize: 13 },
+  nextBadge: { color: WZ.yellow, fontSize: 10, fontWeight: '700', marginLeft: 'auto' },
   bottom: { paddingBottom: 36 },
   cta: {
     borderRadius: 14,

@@ -8,32 +8,32 @@ import { useNavigation } from '@react-navigation/native';
 import { WZ } from '../theme';
 
 const TAGLINES = [
-  'Skip the résumé.',
-  'Hire by vibe.',
-  'Show your story.',
-  'Land it in 60 sec.',
+  { line1: 'Skip the',  line2: 'résumé.'  },
+  { line1: 'Hire by',   line2: 'vibe.'    },
+  { line1: 'Show your', line2: 'story.'   },
+  { line1: 'Land it in',line2: '60 sec.'  },
 ];
 
-const AVATAR_COLORS = ['#2AB6EE', '#FF6B6B', '#2CC6A1', '#FFC93A', '#9B59B6'];
-const AVATAR_INITIALS = ['A', 'S', 'M', 'P', 'R'];
+const AVATAR_INITIALS = ['A', 'S', 'M', 'P'];
+const AVATAR_COLOR = 'rgba(255,255,255,0.22)';
 
 const AvatarStack = () => (
   <View style={stack.row}>
-    {AVATAR_COLORS.map((color, i) => (
+    {AVATAR_INITIALS.map((init, i) => (
       <View
         key={i}
-        style={[stack.circle, { backgroundColor: color, marginLeft: i === 0 ? 0 : -10, zIndex: 5 - i }]}
+        style={[stack.circle, { marginLeft: i === 0 ? 0 : -8, zIndex: 4 - i }]}
       >
-        <Text style={stack.initial}>{AVATAR_INITIALS[i]}</Text>
+        <Text style={stack.initial}>{init}</Text>
       </View>
     ))}
   </View>
 );
 
 const stack = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  circle: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#1E9BD7' },
-  initial: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  circle: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: AVATAR_COLOR },
+  initial: { color: 'rgba(255,255,255,0.85)', fontSize: 7, fontWeight: '700' },
 });
 
 const LandingScreen = () => {
@@ -51,20 +51,31 @@ const LandingScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const tag = TAGLINES[taglineIndex];
+
   return (
-    <LinearGradient colors={['#2AB6EE', '#1E9BD7', '#0E5A8E']} style={styles.container}>
+    <LinearGradient colors={['#1E9BD7', '#0E5A8E', '#06243F']} locations={[0, 0.5, 1]} style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={styles.safe}>
 
-        {/* Topbar: wordmark left + sign in right */}
+        {/* Topbar: wordmark left, Sign in pill right */}
         <View style={styles.topbar}>
-          <Text style={styles.wordmark}>wezume</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')} activeOpacity={0.75}>
-            <Text style={styles.signIn}>Sign in</Text>
+          <Image
+            source={require('../assets/brand/wezume-wordmark-trimmed.png')}
+            style={styles.wordmark}
+            resizeMode="contain"
+            tintColor="#fff"
+          />
+          <TouchableOpacity
+            style={styles.signInPill}
+            onPress={() => navigation.navigate('LoginScreen')}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.signInText}>Sign in</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Center */}
+        {/* Center: mark + strapline + tagline + body */}
         <View style={styles.center}>
           <Image
             source={require('../assets/brand/wezume-mark.webp')}
@@ -72,34 +83,32 @@ const LandingScreen = () => {
             resizeMode="cover"
           />
 
-          {/* Strapline with hairlines */}
-          <View style={styles.straplineRow}>
-            <View style={styles.hairline} />
-            <Text style={styles.strapline}>SPEAK UP. STAND OUT.</Text>
-            <View style={styles.hairline} />
-          </View>
+          {/* Strapline */}
+          <Text style={styles.strapline}>SPEAK UP. STAND OUT.</Text>
 
-          {/* Rotating tagline */}
-          <Animated.Text style={[styles.tagline, { opacity: fadeAnim }]}>
-            {TAGLINES[taglineIndex]}
-          </Animated.Text>
+          {/* Two-line rotating tagline */}
+          <Animated.View style={[styles.taglineBlock, { opacity: fadeAnim }]}>
+            <Text style={styles.taglineLine1}>{tag.line1}</Text>
+            <Text style={styles.taglineLine2}>{tag.line2}</Text>
+          </Animated.View>
 
           {/* Body copy */}
           <Text style={styles.body}>
             Record a 60-second video. Get matched.{'\n'}
-            Land roles, gigs, capital — by who you are,{'\n'}
-            not what you write.
+            Land roles, gigs, capital — by who you are,{'\n'}not what you wrote.
           </Text>
-
-          {/* Avatar stack + social proof */}
-          <View style={styles.socialRow}>
-            <AvatarStack />
-            <Text style={styles.socialText}>10,000+ ditched the résumé</Text>
-          </View>
         </View>
 
-        {/* Bottom */}
+        {/* Bottom: social proof + CTA + footer */}
         <View style={styles.bottom}>
+          <View style={styles.socialRow}>
+            <AvatarStack />
+            <Text style={styles.socialText}>
+              <Text style={styles.socialBold}>10,000+</Text>
+              {' '}ditched the résumé
+            </Text>
+          </View>
+
           <TouchableOpacity onPress={() => navigation.navigate('RoleSelectScreen')} activeOpacity={0.85}>
             <LinearGradient
               colors={['#FFC93A', '#FF9F43']}
@@ -109,6 +118,7 @@ const LandingScreen = () => {
               <Text style={styles.ctaText}>Level up →</Text>
             </LinearGradient>
           </TouchableOpacity>
+
           <Text style={styles.footer}>✨ 60 seconds. No résumé. No script.</Text>
         </View>
 
@@ -119,56 +129,78 @@ const LandingScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 24 },
+  safe: { flex: 1, paddingHorizontal: 22 },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 10,
     marginBottom: 4,
   },
-  wordmark: { color: '#fff', fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  signIn: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  mark: { width: 96, height: 96, borderRadius: 48, marginBottom: 18 },
-  straplineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 18,
+  wordmark: { height: 36, width: 126 },
+  signInPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
   },
-  hairline: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
+  signInText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 8,
+  },
+  mark: { width: 110, height: 110, borderRadius: 55, marginBottom: 16 },
   strapline: {
     color: WZ.yellow,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 2.5,
-    textTransform: 'uppercase',
-  },
-  tagline: {
-    color: '#fff',
-    fontSize: 34,
-    fontWeight: '800',
     textAlign: 'center',
-    letterSpacing: -0.5,
     marginBottom: 14,
   },
+  taglineBlock: { alignItems: 'center', marginBottom: 14 },
+  taglineLine1: {
+    color: '#fff',
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: -1,
+    lineHeight: 46,
+    textAlign: 'center',
+  },
+  taglineLine2: {
+    color: WZ.yellow,
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: -1,
+    lineHeight: 46,
+    textAlign: 'center',
+  },
   body: {
-    color: 'rgba(255,255,255,0.65)',
+    color: 'rgba(255,255,255,0.72)',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
   },
-  socialRow: { alignItems: 'center', gap: 8 },
-  socialText: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '600' },
-  bottom: { paddingBottom: 36 },
+  bottom: { paddingBottom: 32 },
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  socialText: { color: 'rgba(255,255,255,0.65)', fontSize: 10 },
+  socialBold: { color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
   cta: {
     borderRadius: 14,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
     shadowColor: '#FFC93A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.45,
@@ -176,7 +208,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   ctaText: { color: WZ.ink, fontSize: 16, fontWeight: '800' },
-  footer: { color: 'rgba(255,255,255,0.6)', fontSize: 12, textAlign: 'center' },
+  footer: { color: 'rgba(255,255,255,0.55)', fontSize: 11, textAlign: 'center' },
 });
 
 export default LandingScreen;
