@@ -19,7 +19,7 @@ const Initial = () => {
                 }
 
                 if (jobOption === 'Employee' || jobOption === 'Entrepreneur' || jobOption === 'Freelancer') {
-                    navigation.reset({ index: 0, routes: [{ name: 'home1' }] });
+                    navigation.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
                 } else if (jobOption === 'Employer' || jobOption === 'Investor') {
                     navigation.reset({ index: 0, routes: [{ name: 'RecruiterDash' }] });
                 } else if (jobOption === 'placementDrive' || jobOption === 'Academy') {

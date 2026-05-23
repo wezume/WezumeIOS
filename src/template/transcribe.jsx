@@ -60,7 +60,7 @@ const ActionButtons = memo(({ onTranscriptionPress, onDonePress }) => (
   </View>
 ));
 
-const TranscriptionModal = memo(({ visible, transcription, onUpdate, onClose, onTextChange, value }) => {
+const TranscriptionModal = memo(({ visible, transcription: _transcription, onUpdate, onClose, onTextChange, value }) => {
   console.log('🎭 Modal rendered - visible:', visible, 'value:', value, 'value length:', value?.length);
 
   return (
@@ -266,7 +266,7 @@ const TranscribeScreen = () => {
               <VideoPlayer uri={videoData.uri} />
               <ActionButtons
                 onTranscriptionPress={handleFetchTranscription}
-                onDonePress={() => navigation.navigate('home1')}
+                onDonePress={() => navigation.navigate('HomeScreen')}
               />
             </>
           ) : (

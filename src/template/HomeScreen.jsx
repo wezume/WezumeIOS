@@ -312,7 +312,7 @@ const HomeScreen = () => {
           <Text style={styles.aiReviewHeadline}>
             Record your first take to see your AI review.
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('HomeSwipe')}>
+          <TouchableOpacity onPress={() => navigation.navigate('home1')}>
             <Text style={styles.aiReviewCta}>See full review →</Text>
           </TouchableOpacity>
         </View>
