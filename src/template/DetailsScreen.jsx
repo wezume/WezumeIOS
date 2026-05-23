@@ -128,7 +128,7 @@ const DetailsScreen = () => {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.title}>Create your wezume.</Text>
+            <Text style={styles.title}>A few quick details.</Text>
 
             {/* Form */}
             <View style={styles.form}>

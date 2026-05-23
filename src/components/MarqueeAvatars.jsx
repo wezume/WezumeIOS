@@ -1,39 +1,42 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
-const AVATAR_SIZE = 52;
-const AVATAR_MARGIN = 8;
-const ITEM_WIDTH = AVATAR_SIZE + AVATAR_MARGIN * 2;
+const CARD_W = 64;
+const CARD_H = 80;
+const CARD_GAP = 8;
+const ITEM_WIDTH = CARD_W + CARD_GAP;
 
 const ROW1 = [
-  { init: 'AK', color: '#2AB6EE' },
-  { init: 'SR', color: '#FF6B6B' },
-  { init: 'MJ', color: '#2CC6A1' },
-  { init: 'PK', color: '#FFC93A' },
-  { init: 'RV', color: '#9B59B6' },
-  { init: 'NB', color: '#E67E22' },
-  { init: 'LP', color: '#1E9BD7' },
-  { init: 'TM', color: '#27AE60' },
+  { init: 'AK', bg: '#2AB6EE', role: '🎤' },
+  { init: 'SR', bg: '#FF6B6B', role: '💻' },
+  { init: 'MJ', bg: '#2CC6A1', role: '🚀' },
+  { init: 'PK', bg: '#FFC93A', role: '🔍' },
+  { init: 'RV', bg: '#9B59B6', role: '💼' },
+  { init: 'NB', bg: '#E67E22', role: '🎤' },
+  { init: 'LP', bg: '#1E9BD7', role: '💻' },
+  { init: 'TM', bg: '#27AE60', role: '🚀' },
 ];
 
 const ROW2 = [
-  { init: 'DG', color: '#E74C3C' },
-  { init: 'SN', color: '#3498DB' },
-  { init: 'VR', color: '#F39C12' },
-  { init: 'KP', color: '#16A085' },
-  { init: 'AR', color: '#8E44AD' },
-  { init: 'HS', color: '#2980B9' },
-  { init: 'BT', color: '#D35400' },
-  { init: 'CL', color: '#27AE60' },
+  { init: 'DG', bg: '#E74C3C', role: '🔍' },
+  { init: 'SN', bg: '#3498DB', role: '💼' },
+  { init: 'VR', bg: '#F39C12', role: '🎤' },
+  { init: 'KP', bg: '#16A085', role: '💻' },
+  { init: 'AR', bg: '#8E44AD', role: '🚀' },
+  { init: 'HS', bg: '#2980B9', role: '🔍' },
+  { init: 'BT', bg: '#D35400', role: '💼' },
+  { init: 'CL', bg: '#27AE60', role: '🎤' },
 ];
 
-const AvatarChip = ({ init, color }) => (
-  <View style={[styles.avatar, { backgroundColor: color }]}>
+const PortraitCard = ({ init, bg, role }) => (
+  <View style={[styles.card, { backgroundColor: bg }]}>
+    <Text style={styles.roleEmoji}>{role}</Text>
     <Text style={styles.initials}>{init}</Text>
   </View>
 );
 
-const MarqueeRow = ({ data, reverse = false }) => {
+const MarqueeRow = ({ data, reverse = false, duration = 24000 }) => {
   const anim = useRef(new Animated.Value(0)).current;
   const totalWidth = ITEM_WIDTH * data.length;
 
@@ -41,7 +44,7 @@ const MarqueeRow = ({ data, reverse = false }) => {
     const animation = Animated.loop(
       Animated.timing(anim, {
         toValue: reverse ? totalWidth : -totalWidth,
-        duration: 12000,
+        duration,
         useNativeDriver: true,
         easing: Easing.linear,
       })
@@ -56,8 +59,8 @@ const MarqueeRow = ({ data, reverse = false }) => {
     <View style={styles.rowContainer}>
       <Animated.View style={[styles.row, { transform: [{ translateX: anim }] }]}>
         {doubled.map((a, i) => (
-          <View key={i} style={styles.item}>
-            <AvatarChip init={a.init} color={a.color} />
+          <View key={i} style={styles.cardWrapper}>
+            <PortraitCard init={a.init} bg={a.bg} role={a.role} />
           </View>
         ))}
       </Animated.View>
@@ -67,24 +70,66 @@ const MarqueeRow = ({ data, reverse = false }) => {
 
 const MarqueeAvatars = () => (
   <View style={styles.container}>
-    <MarqueeRow data={ROW1} />
-    <MarqueeRow data={ROW2} reverse />
+    <MarqueeRow data={ROW1} duration={24000} />
+    <MarqueeRow data={ROW2} reverse duration={28000} />
+    {/* Left fade edge */}
+    <LinearGradient
+      colors={['#03152A', 'transparent']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.fadeLeft}
+      pointerEvents="none"
+    />
+    {/* Right fade edge */}
+    <LinearGradient
+      colors={['transparent', '#0E5A8E']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.fadeRight}
+      pointerEvents="none"
+    />
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: { overflow: 'hidden', marginVertical: 8 },
-  rowContainer: { overflow: 'hidden', marginVertical: 4 },
+  container: {
+    height: 168,
+    overflow: 'hidden',
+    marginVertical: 8,
+  },
+  rowContainer: {
+    overflow: 'hidden',
+    marginVertical: 3,
+    height: CARD_H,
+  },
   row: { flexDirection: 'row' },
-  item: { marginHorizontal: AVATAR_MARGIN },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
+  cardWrapper: { marginHorizontal: CARD_GAP / 2 },
+  card: {
+    width: CARD_W,
+    height: CARD_H,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
-  initials: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  roleEmoji: { fontSize: 22, marginBottom: 4 },
+  initials: { color: '#fff', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  fadeLeft: {
+    position: 'absolute',
+    top: 0, bottom: 0, left: 0,
+    width: 52,
+  },
+  fadeRight: {
+    position: 'absolute',
+    top: 0, bottom: 0, right: 0,
+    width: 52,
+  },
 });
 
 export default MarqueeAvatars;

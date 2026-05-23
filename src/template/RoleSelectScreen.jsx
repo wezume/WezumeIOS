@@ -93,20 +93,30 @@ const RoleSelectScreen = () => {
 
           {/* Role tiles grid */}
           <View style={styles.grid}>
-            {/* Row 1: Jobseeker + Freelancer */}
+            {/* HIRE section */}
+            <View style={styles.sectionRow}>
+              <View style={[styles.sectionDot, { backgroundColor: WZ.coral }]} />
+              <Text style={styles.sectionLabel}>HIRE</Text>
+              <View style={styles.sectionLine} />
+            </View>
+            <View style={styles.gridRow}>
+              <RoleTile tile={ROLES[3]} />
+              <RoleTile tile={ROLES[4]} />
+            </View>
+
+            {/* BUILD section */}
+            <View style={[styles.sectionRow, styles.sectionRowSpaced]}>
+              <View style={[styles.sectionDot, { backgroundColor: WZ.green }]} />
+              <Text style={styles.sectionLabel}>BUILD</Text>
+              <View style={styles.sectionLine} />
+            </View>
             <View style={styles.gridRow}>
               <RoleTile tile={ROLES[0]} />
               <RoleTile tile={ROLES[1]} />
             </View>
-            {/* Row 2: Entrepreneur + Recruiter */}
-            <View style={styles.gridRow}>
-              <RoleTile tile={ROLES[2]} />
-              <RoleTile tile={ROLES[3]} />
-            </View>
-            {/* Row 3: Investor centered */}
             <View style={styles.gridRowCenter}>
               <View style={styles.tileCentered}>
-                <RoleTile tile={ROLES[4]} />
+                <RoleTile tile={ROLES[2]} />
               </View>
             </View>
           </View>
@@ -145,6 +155,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   grid: { gap: 12 },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: -4,
+  },
+  sectionRowSpaced: { marginTop: 8 },
+  sectionDot: { width: 6, height: 6, borderRadius: 3 },
+  sectionLabel: {
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  sectionLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' },
   gridRow: {
     flexDirection: 'row',
     gap: 12,
