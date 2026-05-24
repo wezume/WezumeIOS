@@ -305,7 +305,7 @@ const ProfileScreen = () => {
         </ImageBackground>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Edit')}>
+          <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={styles.profileButtonText}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.profileButton, styles.deleteButton]} onPress={openDeleteLink}>

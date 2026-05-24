@@ -13,22 +13,27 @@ const Initial = () => {
                 const onboarded = await AsyncStorage.getItem('onboarded');
                 const jobOption = await AsyncStorage.getItem('jobOption');
 
-                if (!userToken || onboarded !== 'true') {
+                if (!onboarded) {
+                    // Brand-new user — show onboarding/landing
                     navigation.reset({ index: 0, routes: [{ name: 'LandingScreen' }] });
                     return;
                 }
 
-                if (jobOption === 'Employee' || jobOption === 'Entrepreneur' || jobOption === 'Freelancer') {
-                    navigation.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
-                } else if (jobOption === 'Employer' || jobOption === 'Investor') {
+                if (!userToken) {
+                    // Returning user, logged out
+                    navigation.reset({ index: 0, routes: [{ name: 'LoginScreen' }] });
+                    return;
+                }
+
+                // Returning user, logged in
+                if (jobOption === 'Employer' || jobOption === 'Investor') {
                     navigation.reset({ index: 0, routes: [{ name: 'RecruiterDash' }] });
                 } else if (jobOption === 'placementDrive' || jobOption === 'Academy') {
                     navigation.reset({ index: 0, routes: [{ name: 'RoleSelection' }] });
                 } else {
-                    navigation.reset({ index: 0, routes: [{ name: 'LandingScreen' }] });
+                    navigation.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
                 }
-            } catch (error) {
-                console.error('Error in initialScreen routing:', error);
+            } catch {
                 navigation.reset({ index: 0, routes: [{ name: 'LandingScreen' }] });
             }
         };
@@ -44,12 +49,7 @@ const Initial = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#000',
-    },
+    container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
 });
 
 export default Initial;
