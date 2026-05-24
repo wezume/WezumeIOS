@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Initial from './src/template/initialScreen';
 import LoginScreen from './src/template/LoginScreen';
 import SignupScreen from './src/template/SignupScreen';
-import HomeScreen from './src/template/HomeScreen';
+import MainTabs from './src/template/MainTabs';
 import home1 from './src/template/home1';
 import OnboardingScreen from './src/template/onboarding';
 import CameraScreen from './src/template/camera';
@@ -18,6 +18,7 @@ import Transcribe from './src/template/transcribe';
 import Account from './src/template/account';
 import LikeScreen from './src/template/likedvideo';
 import Edit from './src/template/Edit';
+import EditProfileScreen from './src/template/EditProfileScreen';
 import Filtered from './src/template/filterd';
 import Trending from './src/template/trending';
 import Myvideos from './src/template/myvideos';
@@ -42,6 +43,7 @@ import RoleSelectScreen from './src/template/RoleSelectScreen';
 import DetailsScreen from './src/template/DetailsScreen';
 import SuccessScreen from './src/template/SuccessScreen';
 import { OnboardingProvider } from './src/template/OnboardingContext';
+import MyVideoScreen from './src/template/MyVideoScreen';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -216,7 +218,7 @@ const App = () => {
           <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} />
           <Stack.Screen name="LoginScreen" component={LoginScreen} />
           <Stack.Screen name="SignupScreen" component={SignupScreen} />
-          <Stack.Screen name="HomeScreen" component={HomeScreen} />
+          <Stack.Screen name="HomeScreen" component={MainTabs} />
           <Stack.Screen name="home1" component={home1} />
           <Stack.Screen name="CameraPage" component={CameraScreen} />
           <Stack.Screen name="profile" component={Profile} />
@@ -225,6 +227,7 @@ const App = () => {
           <Stack.Screen name="LikeScreen" component={LikeScreen} />
           <Stack.Screen name="Filtered" component={Filtered} />
           <Stack.Screen name="Edit" component={Edit} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Trending" component={Trending} />
           <Stack.Screen name="Myvideos" component={Myvideos} />
           <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
@@ -245,6 +248,7 @@ const App = () => {
           <Stack.Screen name="RoleSelectScreen" component={RoleSelectScreen} />
           <Stack.Screen name="DetailsScreen" component={DetailsScreen} />
           <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
+          <Stack.Screen name="MyVideoScreen" component={MyVideoScreen} />
         </Stack.Navigator>
       </NavigationContainer>
       </OnboardingProvider>

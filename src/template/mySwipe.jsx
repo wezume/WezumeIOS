@@ -307,15 +307,6 @@ const VideoPlayer = memo(({ item, isActive, onLike, isLiked }) => {
                 <Text style={styles.userName}>{firstName}</Text>
               </View>
             </View>
-            <View style={styles.rightColumn}>
-              <AnimatedIconButton onPress={handleLikePress}>
-                <Like name={'heart'} size={30} color={isLiked ? '#FF005E' : '#fff'} />
-                <Text style={styles.iconText}>{likeCount}</Text>
-              </AnimatedIconButton>
-              <AnimatedIconButton onPress={handleShare}>
-                <Shares name={'share'} size={30} color={'#fff'} />
-              </AnimatedIconButton>
-            </View>
           </View>
         </LinearGradient>
       </View>

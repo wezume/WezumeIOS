@@ -303,12 +303,7 @@ const Home1 = () => {
     }
   }, [isFocused, fetchVideoAndSubtitles]);
 
-  useEffect(() => {
-    if (!loading && !hasVideo && !demoShownRef.current) {
-      setShowDemoModal(true);
-      demoShownRef.current = true;
-    }
-  }, [loading, hasVideo]);
+  // Demo modal is available but not auto-shown
 
   useEffect(() => {
     if (videoId && videoUri && audioUri && isFocused && !analysisTriggered.current) {

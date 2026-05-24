@@ -334,18 +334,24 @@ const CameraPage = () => {
         </View>
       )}
 
-      <Modal transparent={true} animationType="fade" visible={showJobIdPrompt}>
+      <Modal transparent animationType="fade" visible={showJobIdPrompt}>
         <View style={styles.jobId.container}>
           <View style={styles.jobId.content}>
-            <Text style={styles.jobId.title}>Choose an ID</Text>
-            <Text style={styles.jobId.text}>If you want to apply for a specific position, enter the Job ID below.</Text>
-            <TextInput placeholder="Enter Job ID (optional)" value={jobId} onChangeText={setJobId} style={styles.jobId.input} />
+            <Text style={styles.jobId.title}>Applying for a role?</Text>
+            <Text style={styles.jobId.text}>Enter the Job ID if you're recording for a specific position — otherwise skip.</Text>
+            <TextInput
+              placeholder="Job ID (optional)"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              value={jobId}
+              onChangeText={setJobId}
+              style={styles.jobId.input}
+            />
             <View style={styles.jobId.buttonContainer}>
-              <TouchableOpacity onPress={() => { setShowJobIdPrompt(false); setJobId(''); }} style={[styles.jobId.button, styles.jobId.buttonSkip]}>
-                <Text style={styles.jobId.buttonText}>Skip</Text>
+              <TouchableOpacity onPress={() => { setShowJobIdPrompt(false); setJobId(''); }} style={styles.jobId.buttonSkip}>
+                <Text style={styles.jobId.skipText}>Skip</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowJobIdPrompt(false)} style={[styles.jobId.button, styles.jobId.buttonSubmit]}>
-                <Text style={styles.jobId.buttonText}>Submit</Text>
+              <TouchableOpacity onPress={() => setShowJobIdPrompt(false)} style={styles.jobId.buttonSubmit}>
+                <Text style={styles.jobId.submitText}>Start recording →</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -505,58 +511,72 @@ const styles = StyleSheet.create({
   },
   jobId: {
     container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.6)',
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.75)',
     },
     content: {
-        width: '85%',
-        backgroundColor: 'white',
-        padding: 25,
-        borderRadius: 15,
+      width: '88%',
+      backgroundColor: '#0F2438',
+      padding: 24,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.12)',
     },
     title: {
-        fontSize: 20, 
-        fontWeight: 'bold', 
-        marginBottom: 10, 
-        textAlign: 'center'
+      fontSize: 20,
+      fontWeight: '700',
+      marginBottom: 8,
+      color: '#fff',
     },
     text: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 20,
-        color: '#666'
+      fontSize: 14,
+      marginBottom: 20,
+      color: 'rgba(255,255,255,0.6)',
+      lineHeight: 20,
     },
-    input: { 
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 20,
-        textAlign: 'center',
+    input: {
+      fontSize: 15,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.15)',
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 20,
+      color: '#fff',
+      backgroundColor: 'rgba(255,255,255,0.07)',
     },
     buttonContainer: {
-        flexDirection: 'row', 
-        justifyContent: 'space-between'
-    },
-    button: {
-        paddingVertical: 12,
-        borderRadius: 8,
-        width: '48%',
-        alignItems: 'center',
+      flexDirection: 'row',
+      gap: 10,
     },
     buttonSkip: {
-        backgroundColor: '#A9A9A9',
+      height: 48,
+      paddingHorizontal: 20,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.10)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.18)',
+    },
+    skipText: {
+      color: '#fff',
+      fontWeight: '600',
+      fontSize: 15,
     },
     buttonSubmit: {
-        backgroundColor: '#007AFF',
+      flex: 1,
+      height: 48,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FFC93A',
     },
-    buttonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16
+    submitText: {
+      color: '#0B1623',
+      fontWeight: '800',
+      fontSize: 15,
     },
   },
   permission: {
@@ -564,34 +584,34 @@ const styles = StyleSheet.create({
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#1c1c1c',
-      padding: 20,
+      backgroundColor: '#0B2138',
+      padding: 28,
     },
     title: {
       fontSize: 22,
-      fontWeight: 'bold',
-      color: 'white',
+      fontWeight: '700',
+      color: '#fff',
       marginTop: 20,
       textAlign: 'center',
     },
     message: {
-      fontSize: 16,
-      color: '#ccc',
+      fontSize: 15,
+      color: 'rgba(255,255,255,0.65)',
       textAlign: 'center',
       marginTop: 10,
       lineHeight: 22,
     },
     button: {
-      backgroundColor: '#007AFF',
-      paddingVertical: 12,
-      paddingHorizontal: 30,
-      borderRadius: 25,
-      marginTop: 30,
+      backgroundColor: '#FFC93A',
+      paddingVertical: 14,
+      paddingHorizontal: 36,
+      borderRadius: 14,
+      marginTop: 32,
     },
     buttonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: '600',
+      color: '#0B1623',
+      fontSize: 15,
+      fontWeight: '800',
     },
   },
 });
