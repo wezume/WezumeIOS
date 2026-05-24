@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   topControls: {
     position: 'absolute',
-    top: 60, // iOS safe area
+    top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 12,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   timerContainer: {
     position: 'absolute',
-    top: 65, // iOS safe area
+    top: Platform.OS === 'ios' ? 65 : (StatusBar.currentHeight || 0) + 17,
     alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 15,
