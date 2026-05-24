@@ -11,6 +11,7 @@ import {
   Platform,
   StatusBar,
   Text,
+  Image,
   ScrollView,
 } from 'react-native';
 import Animated, {
@@ -31,7 +32,7 @@ const WZ = {
   line: '#E5ECF3', bg: '#F4F8FC', card: '#FFFFFF',
 };
 
-const CACHED_VIDEOS_KEY = 'cachedVideos';
+const CACHED_MY_VIDEO_KEY = 'cachedMyVideo';
 
 // --- Memoized and Animated Video Item ---
 const VideoThumbnail = memo(({ item, index, onVideoPress }) => {
@@ -66,7 +67,6 @@ const VideoThumbnail = memo(({ item, index, onVideoPress }) => {
     </Animated.View>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison to ensure stability
   return prevProps.item.id === nextProps.item.id &&
     prevProps.onVideoPress === nextProps.onVideoPress;
 });
@@ -77,42 +77,39 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState({ userId: null, firstName: '' });
   const [videos, setVideos] = useState([]);
-  const videosRef = useRef([]); // Ref to hold videos for stable callbacks
-  const [_profileImage, setProfileImage] = useState(null); // loaded for future use (e.g. avatar in hero)
+  const videosRef = useRef([]);
+  const [_profileImage, setProfileImage] = useState(null);
   const [verificationStatus, setVerificationStatus] = useState(null);
+  const [resendSent, setResendSent] = useState(false);
 
-  // --- Pagination and Refreshing State ---
-  const [page, setPage] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMoreData, setHasMoreData] = useState(true);
-  // ✅ FIX: Added state for pull-to-refresh
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const VIDEO_PAGE_SIZE = 20;
-
-  const fetchVideosFromServer = useCallback(async (currentPage, currentUserId) => {
-    // This guard now correctly prevents fetches for subsequent pages when loading,
-    // or when we know there is no more data.
-    if ((currentPage > 0 && loadingMore) || !hasMoreData) return;
-
-    // Use the appropriate loading indicator
-    const loadingFunction = currentPage === 0 ? setIsLoading : setLoadingMore;
-    if (!isRefreshing) {
-      loadingFunction(true);
-    }
-
+  const refreshVerificationStatus = useCallback(async () => {
     try {
-      const response = await apiClient.get(`/api/videos/videos?page=${currentPage}&size=${VIDEO_PAGE_SIZE}`);
-      const { videos: videoData, totalPages, currentPage: responseCurrentPage } = response.data;
-
-      if (!Array.isArray(videoData)) throw new Error('Invalid data format');
-
-      if (responseCurrentPage >= totalPages - 1 || videoData.length === 0) {
-        setHasMoreData(false);
+      const res = await apiClient.get('/api/user-detail');
+      const status = res.data?.verification_status ?? null;
+      if (status) {
+        setVerificationStatus(status);
+        await AsyncStorage.setItem('verification_status', String(status));
       }
+    } catch (_) {}
+  }, []);
 
-      const formattedVideos = videoData
-        .filter(video => video.userId !== currentUserId && video.thumbnail)
-        .map(video => ({
+  const handleResendVerification = useCallback(async () => {
+    try {
+      const email = await AsyncStorage.getItem('email');
+      await apiClient.post('/api/users/resend-verification', { email });
+      setResendSent(true);
+      Alert.alert('Email sent', 'Check your inbox for the verification link.');
+    } catch (_) {
+      Alert.alert('Error', 'Could not send verification email. Please try again.');
+    }
+  }, []);
+
+  const fetchMyVideos = useCallback(async (userId) => {
+    try {
+      const response = await apiClient.get(`/api/videos/user/${userId}`);
+      const video = response.data;
+      if (video && video.id) {
+        const formatted = [{
           id: video.id,
           userId: video.userId,
           uri: video.videoUrl || video.uri,
@@ -122,42 +119,23 @@ const HomeScreen = () => {
           email: video.email || '',
           thumbnail: video.thumbnail || null,
           link: video.links || '',
-        }));
-      console.log("formatted video", formattedVideos);
-
-      if (currentPage === 0) {
-        setVideos(formattedVideos);
-        await AsyncStorage.setItem(CACHED_VIDEOS_KEY, JSON.stringify(formattedVideos));
+        }];
+        setVideos(formatted);
+        videosRef.current = formatted;
+        await AsyncStorage.setItem(CACHED_MY_VIDEO_KEY, JSON.stringify(formatted));
       } else {
-
-        setVideos(prevVideos => {
-          const newUniqueVideos = formattedVideos.filter(
-            newVideo => !prevVideos.some(prevVideo => prevVideo.id === newVideo.id)
-          );
-          const updatedVideos = [...prevVideos, ...newUniqueVideos];
-          AsyncStorage.setItem(CACHED_VIDEOS_KEY, JSON.stringify(updatedVideos));
-          // Update ref
-          videosRef.current = updatedVideos;
-          return updatedVideos;
-        });
+        setVideos([]);
+        videosRef.current = [];
       }
-
-      // Update ref for page 0 case too
-      if (currentPage === 0) {
-        videosRef.current = formattedVideos;
-      }
-
     } catch (err) {
-      console.error('Error fetching videos from server:', err);
-      setHasMoreData(false);
-    } finally {
-      if (!isRefreshing) {
-        loadingFunction(false);
-      }
+      console.error('Error fetching my videos:', err);
     }
-  }, [hasMoreData, loadingMore, isRefreshing]);
+  }, []);
 
-  // ✅ FIX: This useEffect now runs ONLY ONCE when the component mounts
+  useEffect(() => {
+    if (isFocused) refreshVerificationStatus();
+  }, [isFocused, refreshVerificationStatus]);
+
   useEffect(() => {
     const loadInitialData = async () => {
       setIsLoading(true);
@@ -177,53 +155,31 @@ const HomeScreen = () => {
       setVerificationStatus(verStatus);
 
       try {
-        const cachedVideos = await AsyncStorage.getItem(CACHED_VIDEOS_KEY);
-        if (cachedVideos) {
-          const parsed = JSON.parse(cachedVideos);
+        const cached = await AsyncStorage.getItem(CACHED_MY_VIDEO_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
           setVideos(parsed);
           videosRef.current = parsed;
         }
       } catch (error) {
-        console.error("Error loading videos from cache:", error);
+        console.error('Error loading cached video:', error);
       }
 
-      // Fetch fresh data for page 0 to ensure content isn't stale
-      await fetchVideosFromServer(0, currentUser.userId);
+      await fetchMyVideos(userId);
       setIsLoading(false);
     };
 
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array means it runs only once on mount
-
-
-  // --- Handlers ---
-
-  // ✅ FIX: Created a dedicated refresh handler
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    // Reset pagination state and fetch the first page
-    setPage(0);
-    setHasMoreData(true);
-    await fetchVideosFromServer(0, user.userId);
-    setIsRefreshing(false);
-  }, [user.userId, fetchVideosFromServer]);
-
-  const handleLoadMore = () => {
-    if (!loadingMore && hasMoreData && !isRefreshing) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchVideosFromServer(nextPage, user.userId);
-    }
-  };
+  }, []);
 
   const handleVideoPress = useCallback((item, index) => {
     navigation.navigate('HomeSwipe', {
       videoId: item.id,
       index,
-      allvideos: videosRef.current, // Use ref to avoid dependency on 'videos' state
+      allvideos: videosRef.current,
     });
-  }, [navigation]); // removed 'videos' dependency
+  }, [navigation]);
 
   const renderItem = useCallback(({ item, index }) => (
     <VideoThumbnail
@@ -233,29 +189,23 @@ const HomeScreen = () => {
     />
   ), [handleVideoPress]);
 
-  const renderFooter = () => {
-    if (!loadingMore) return null;
-    return <ActivityIndicator style={{ marginVertical: 20 }} size="large" color={WZ.blue} />;
-  };
-
   // --- Back Button Handler ---
   useEffect(() => {
     if (!isFocused) return;
 
     const backAction = () => {
       Alert.alert(
-        "Go Back",
-        "Are you sure you want to go back?",
+        'Go Back',
+        'Are you sure you want to go back?',
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "YES", onPress: () => navigation.goBack() }
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'YES', onPress: () => navigation.goBack() },
         ]
       );
       return true;
     };
 
-    const subscription = BackHandler.addEventListener("hardwareBackPress", backAction);
-
+    const subscription = BackHandler.addEventListener('hardwareBackPress', backAction);
     return () => subscription.remove();
   }, [isFocused, navigation]);
 
@@ -274,21 +224,46 @@ const HomeScreen = () => {
         style={styles.heroBand}>
         {/* Topbar row */}
         <View style={styles.heroTopbar}>
-          <Text style={styles.heroWordmark}>wezume</Text>
-          <View style={styles.heroIcons}>
-            <TouchableOpacity style={styles.heroIconBtn}>
-              <Text style={styles.heroIconText}>⚡</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.heroIconBtn}>
-              <Text style={styles.heroIconText}>☰</Text>
-            </TouchableOpacity>
-          </View>
+          <Image
+            source={require('../assets/brand/wezume-wordmark-trimmed.png')}
+            style={styles.wordmark}
+            resizeMode="contain"
+            tintColor="#fff"
+          />
+          <TouchableOpacity style={styles.heroIconBtn}>
+            <Text style={styles.heroIconText}>☰</Text>
+          </TouchableOpacity>
         </View>
         {/* Greeting */}
         <View style={styles.greetingWrap}>
           <Text style={styles.greetingSmall}>{getGreeting()}</Text>
-          <Text style={styles.greetingName}>{user.firstName} 👋</Text>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greetingName}>{user.firstName} 👋</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Edit')}
+              activeOpacity={0.7}
+              style={styles.editProfileBtn}
+            >
+              <Text style={styles.editProfileText}>update profile →</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        {/* Verify pill */}
+        {verificationStatus === 'verified' ? (
+          <View style={styles.verifiedPill}>
+            <Text style={styles.verifiedPillText}>✓ email verified</Text>
+          </View>
+        ) : verificationStatus === 'pending' ? (
+          <TouchableOpacity
+            style={[styles.verifyPill, resendSent && styles.verifyPillSent]}
+            onPress={handleResendVerification}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.verifyPillText}>
+              {resendSent ? '✉ email sent · resend' : '✉ verify your email →'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </LinearGradient>
 
       {/* Cards section (overlapping hero) */}
@@ -296,15 +271,6 @@ const HomeScreen = () => {
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-
-        {/* Verify Banner (shown only if pending) */}
-        {verificationStatus === 'pending' && (
-          <View style={styles.verifyBanner}>
-            <Text style={styles.verifyBannerText}>
-              Your account is pending verification.
-            </Text>
-          </View>
-        )}
 
         {/* AI Review headline card */}
         <View style={styles.aiReviewCard}>
@@ -334,15 +300,14 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </LinearGradient>
 
-        {/* Discover section heading */}
-        <View style={styles.discoverHeader}>
-          <Text style={styles.discoverTitle}>Discover</Text>
-          <TouchableOpacity>
-            <Text style={styles.discoverSeeAll}>See all</Text>
+        {/* My Takes section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Takes</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('CameraPage')}>
+            <Text style={styles.sectionCta}>+ Record</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Video grid */}
         {isLoading && videos.length === 0 ? (
           <ActivityIndicator size="large" color={WZ.blue} style={{ marginTop: 40 }} />
         ) : (
@@ -354,17 +319,11 @@ const HomeScreen = () => {
             initialNumToRender={20}
             maxToRenderPerBatch={20}
             windowSize={21}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={!isLoading && !isRefreshing ? (
+            ListEmptyComponent={!isLoading ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No videos available right now.</Text>
+                <Text style={styles.emptyText}>No takes yet. Hit record to start.</Text>
               </View>
             ) : null}
-            // ✅ FIX: Added props for pull-to-refresh
-            onRefresh={handleRefresh}
-            refreshing={isRefreshing}
             scrollEnabled={false}
           />
         )}
@@ -392,12 +351,11 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   heroBand: {
-    height: 200,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     paddingTop: Platform.OS === 'ios' ? 52 : 16,
     paddingHorizontal: 20,
-    paddingBottom: 48,
+    paddingBottom: 22,
   },
   heroTopbar: {
     flexDirection: 'row',
@@ -405,15 +363,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  heroWordmark: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  heroIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  wordmark: {
+    height: 36,
+    width: 126,
   },
   heroIconBtn: {
     marginLeft: 14,
@@ -424,6 +376,19 @@ const styles = StyleSheet.create({
   },
   greetingWrap: {
     marginTop: 4,
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editProfileBtn: {
+    paddingVertical: 2,
+  },
+  editProfileText: {
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 11,
+    fontWeight: '600',
   },
   greetingSmall: {
     color: 'rgba(255,255,255,0.70)',
@@ -437,27 +402,47 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
+  verifyPill: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: '#8B1A1A',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  verifyPillSent: {
+    backgroundColor: '#6B4C00',
+  },
+  verifyPillText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  verifiedPill: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(44,198,161,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(44,198,161,0.55)',
+  },
+  verifiedPillText: {
+    color: '#2CC6A1',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   scrollArea: {
     flex: 1,
-    marginTop: -40,
+    marginTop: -20,
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 0,
     paddingBottom: 100,
-  },
-  verifyBanner: {
-    backgroundColor: WZ.amber,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  verifyBannerText: {
-    color: WZ.ink,
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   aiReviewCard: {
     backgroundColor: WZ.card,
@@ -525,18 +510,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  discoverHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  discoverTitle: {
+  sectionTitle: {
     color: WZ.ink,
     fontSize: 17,
     fontWeight: '700',
   },
-  discoverSeeAll: {
+  sectionCta: {
     color: WZ.blue,
     fontSize: 13,
     fontWeight: '600',

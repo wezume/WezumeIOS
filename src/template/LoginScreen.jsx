@@ -90,6 +90,7 @@ const LoginScreen = () => {
         profileUrl,
         profilePic,
         jobid,
+        verification_status,
       } = userDetails;
       const videoId = videos?.[0]?.videoId || null;
 
@@ -103,7 +104,7 @@ const LoginScreen = () => {
         console.log('🔄 Redirecting to RoleSelection (Placement/Academy user)');
         navigation.navigate('RoleSelection');
       } else {
-        await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic);
+        await saveStorage(userId, firstName, userEmail, jobOption, industry, videoId, college, profileUrl || profilePic, verification_status);
 
         switch (jobOption) {
           case 'Employer':
@@ -147,7 +148,7 @@ const LoginScreen = () => {
     }
   };
 
-  const saveStorage = async (userId, firstName, email, jobOption, industry, videoId, college, profileUrl) => {
+  const saveStorage = async (userId, firstName, email, jobOption, industry, videoId, college, profileUrl, verificationStatus) => {
     try {
       const items = [
         ['userId', userId ? userId.toString() : ''],
@@ -157,6 +158,7 @@ const LoginScreen = () => {
         ['industry', industry || ''],
         ['college', college || ''],
         ['profileUrl', profileUrl || ''],
+        ['verification_status', String(verificationStatus ?? '')],
       ];
 
       if (videoId) {
