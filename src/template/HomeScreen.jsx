@@ -156,6 +156,8 @@ const HomeScreen = () => {
   const [user, setUser] = useState({ userId: null, firstName: '' });
   const [videos, setVideos] = useState([]);
   const videosRef = useRef([]);
+  const [videoProcessing, setVideoProcessing] = useState(null); // { videoId, status }
+  const processingPollRef = useRef(null);
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [profileTags, setProfileTags] = useState([]);
   const [verificationStatus, setVerificationStatus] = useState(null);
@@ -350,6 +352,33 @@ const HomeScreen = () => {
 
   const isVerified = verificationStatus === 'verified';
 
+  // Poll processing status when a video is still being processed
+  useEffect(() => {
+    const checkPending = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pendingVideoProcessing');
+        if (!raw) return;
+        const pending = JSON.parse(raw);
+        if (pending.status === 'READY') { setVideoProcessing(null); return; }
+        setVideoProcessing(pending);
+
+        processingPollRef.current = setInterval(async () => {
+          try {
+            const res = await apiClient.get(`/api/videos/processing-status/${pending.videoId}`);
+            const { status } = res.data;
+            setVideoProcessing({ videoId: pending.videoId, status });
+            if (status === 'READY') {
+              clearInterval(processingPollRef.current);
+              await AsyncStorage.removeItem('pendingVideoProcessing');
+              setVideoProcessing(null);
+            }
+          } catch (_) {}
+        }, 8000);
+      } catch (_) {}
+    };
+    checkPending();
+    return () => clearInterval(processingPollRef.current);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -375,6 +404,18 @@ const HomeScreen = () => {
           <Text style={styles.greetingName}>{user.firstName}</Text>
         </View>
       </LinearGradient>
+
+      {/* Processing banner */}
+      {videoProcessing && (
+        <View style={styles.processingBanner}>
+          <ActivityIndicator size="small" color="#FFC93A" style={{ marginRight: 8 }} />
+          <Text style={styles.processingBannerText}>
+            {videoProcessing.status === 'SCORING'
+              ? 'Calculating your AI score…'
+              : 'Analysing your speech…'}
+          </Text>
+        </View>
+      )}
 
       {/* Cards section (overlapping hero) */}
       <ScrollView
@@ -508,6 +549,13 @@ const styles = StyleSheet.create({
     backgroundColor: WZ.bg,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
+  processingBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(11,33,56,0.92)',
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  processingBannerText: { color: '#FFC93A', fontSize: 13, fontWeight: '600', flex: 1 },
   heroBand: {
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
