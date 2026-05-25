@@ -20,6 +20,7 @@ import LikeScreen from './src/template/likedvideo';
 import Edit from './src/template/Edit';
 import EditProfileScreen from './src/template/EditProfileScreen';
 import Filtered from './src/template/filterd';
+import NotificationsScreen from './src/template/NotificationsScreen';
 import Trending from './src/template/trending';
 import Myvideos from './src/template/myvideos';
 import ForgetPassword from './src/template/forgetpassword';
@@ -249,6 +250,7 @@ const App = () => {
           <Stack.Screen name="DetailsScreen" component={DetailsScreen} />
           <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
           <Stack.Screen name="MyVideoScreen" component={MyVideoScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
       </OnboardingProvider>

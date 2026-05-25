@@ -158,6 +158,7 @@ const HomeScreen = () => {
   const videosRef = useRef([]);
   const [videoProcessing, setVideoProcessing] = useState(null); // { videoId, status }
   const processingPollRef = useRef(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [profileTags, setProfileTags] = useState([]);
   const [verificationStatus, setVerificationStatus] = useState(null);
@@ -237,6 +238,7 @@ const HomeScreen = () => {
   }, []);
 
   const fetchMyVideos = useCallback(async (userId) => {
+    const cacheKey = `${CACHED_MY_VIDEO_KEY}_${userId}`;
     try {
       const response = await apiClient.get(`/api/videos/user/${userId}`);
       const video = response.data;
@@ -255,14 +257,18 @@ const HomeScreen = () => {
         }];
         setVideos(formatted);
         videosRef.current = formatted;
-        await AsyncStorage.setItem(CACHED_MY_VIDEO_KEY, JSON.stringify(formatted));
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(formatted));
         fetchAIInsight(video.id);
       } else {
         setVideos([]);
         videosRef.current = [];
+        await AsyncStorage.removeItem(cacheKey);
       }
     } catch (err) {
-      console.error('Error fetching my videos:', err);
+      // No video for this user — clear any stale data from another user's session
+      setVideos([]);
+      videosRef.current = [];
+      await AsyncStorage.removeItem(cacheKey);
     }
   }, [fetchAIInsight]);
 
@@ -287,7 +293,7 @@ const HomeScreen = () => {
       setVerificationStatus(verStatus);
 
       try {
-        const cached = await AsyncStorage.getItem(CACHED_MY_VIDEO_KEY);
+        const cached = await AsyncStorage.getItem(`${CACHED_MY_VIDEO_KEY}_${userId}`);
         if (cached) {
           const parsed = JSON.parse(cached);
           setVideos(parsed);
@@ -380,6 +386,18 @@ const HomeScreen = () => {
     return () => clearInterval(processingPollRef.current);
   }, []);
 
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        if (!userId) return;
+        const res = await apiClient.get(`/api/notifications?userId=${userId}`);
+        setUnreadCount((res.data || []).filter(n => !n.isRead).length);
+      } catch (_) {}
+    };
+    fetchUnread();
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Hero band */}
@@ -394,8 +412,9 @@ const HomeScreen = () => {
             resizeMode="contain"
             tintColor="#fff"
           />
-          <TouchableOpacity style={styles.heroIconBtn} onPress={() => navigation.navigate('HomeSwipe', { allvideos: videos })} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.heroIconBtn} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.7}>
             <MaterialIcons name="notifications-none" size={26} color="#fff" />
+            {unreadCount > 0 && <View style={styles.unreadBadge} />}
           </TouchableOpacity>
         </View>
         {/* Greeting */}
@@ -530,9 +549,10 @@ const HomeScreen = () => {
             maxToRenderPerBatch={20}
             windowSize={21}
             ListEmptyComponent={!isLoading ? (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No takes yet. Hit record to start.</Text>
-              </View>
+              <TouchableOpacity style={styles.recordTile} onPress={() => navigation.navigate('CameraPage')} activeOpacity={0.8}>
+                <MaterialIcons name="add" size={30} color={WZ.blue} />
+                <Text style={styles.recordTileText}>Record{'\n'}Video</Text>
+              </TouchableOpacity>
             ) : null}
             scrollEnabled={false}
           />
@@ -556,6 +576,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   processingBannerText: { color: '#FFC93A', fontSize: 13, fontWeight: '600', flex: 1 },
+  unreadBadge: {
+    position: 'absolute', top: 2, right: 2,
+    width: 9, height: 9, borderRadius: 5,
+    backgroundColor: '#e74c3c',
+    borderWidth: 1.5, borderColor: '#1E9BD7',
+  },
+  recordTile: {
+    width: 88, height: 118, borderRadius: 12, margin: 4,
+    borderWidth: 1.5, borderColor: WZ.blue, borderStyle: 'dashed',
+    backgroundColor: WZ.card,
+    alignItems: 'center', justifyContent: 'center', gap: 6,
+  },
+  recordTileText: { color: WZ.blue, fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 16 },
   heroBand: {
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
