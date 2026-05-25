@@ -7,7 +7,6 @@ import {
   Text,
   ImageBackground,
   Modal,
-  FlatList,
   Linking,
   Platform,
   StatusBar,
@@ -197,16 +196,15 @@ const Header = ({ profile, userName }) => {
       <Modal visible={isNotiModalVisible} animationType="slide" onRequestClose={() => setIsNotiModalVisible(false)}>
         <View style={styles.notiModalContainer}>
           <Text style={styles.notiTitle}>Notifications</Text>
-          <FlatList
-            data={notifications}
-            keyExtractor={(_, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.notiItem}>
-                <Text style={styles.notiText}>{item.firstName} ❤️ liked your video.</Text>
-              </View>
-            )}
-            ListEmptyComponent={<Text style={styles.notiEmptyText}>No new notifications</Text>}
-          />
+          {notifications.length === 0 ? (
+            <Text style={styles.notiEmptyText}>No new notifications</Text>
+          ) : (
+            <View style={styles.notiItem}>
+              <Text style={styles.notiText}>
+                ❤️ {notifications.length} {notifications.length === 1 ? 'person' : 'people'} liked your video.
+              </Text>
+            </View>
+          )}
           <View style={styles.notiFooter}>
             <TouchableOpacity style={[styles.notiButton, { backgroundColor: '#e74c3c' }]} onPress={clearNotifications}>
               <Text style={styles.notiButtonText}>Clear All</Text>

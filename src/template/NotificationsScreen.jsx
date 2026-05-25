@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity,
+  View, Text, TouchableOpacity,
   StyleSheet, ActivityIndicator, Platform, StatusBar, SafeAreaView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -19,21 +19,28 @@ function timeAgo(isoString) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const NotificationItem = ({ item }) => (
-  <View style={[styles.item, !item.isRead && styles.itemUnread]}>
-    <View style={styles.iconWrap}>
-      <MaterialIcons name="favorite" size={20} color="#e74c3c" />
+const LikeSummary = ({ notifications }) => {
+  const count = notifications.length;
+  const hasUnread = notifications.some(n => !n.isRead);
+  const latest = notifications.reduce((a, b) =>
+    new Date(b.timestamp) > new Date(a.timestamp) ? b : a
+  );
+  return (
+    <View style={[styles.item, hasUnread && styles.itemUnread]}>
+      <View style={styles.iconWrap}>
+        <MaterialIcons name="favorite" size={20} color="#e74c3c" />
+      </View>
+      <View style={styles.itemBody}>
+        <Text style={styles.itemText}>
+          <Text style={styles.itemName}>{count}</Text>
+          {count === 1 ? ' person liked your video' : ' people liked your video'}
+        </Text>
+        <Text style={styles.itemTime}>{timeAgo(latest.timestamp)}</Text>
+      </View>
+      {hasUnread && <View style={styles.unreadDot} />}
     </View>
-    <View style={styles.itemBody}>
-      <Text style={styles.itemText}>
-        <Text style={styles.itemName}>{item.likerName}</Text>
-        {' liked your video'}
-      </Text>
-      <Text style={styles.itemTime}>{timeAgo(item.timestamp)}</Text>
-    </View>
-    {!item.isRead && <View style={styles.unreadDot} />}
-  </View>
-);
+  );
+};
 
 const NotificationsScreen = () => {
   const navigation = useNavigation();
@@ -84,13 +91,9 @@ const NotificationsScreen = () => {
             <Text style={styles.emptySubtitle}>When someone likes your video, you'll see it here.</Text>
           </View>
         ) : (
-          <FlatList
-            data={notifications}
-            keyExtractor={item => String(item.id)}
-            renderItem={({ item }) => <NotificationItem item={item} />}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-          />
+          <View style={styles.list}>
+            <LikeSummary notifications={notifications} />
+          </View>
         )}
 
       </SafeAreaView>
