@@ -309,9 +309,9 @@ const HomeScreen = () => {
       userId:  item.userId,
       uri:     item.uri,
       thumbnail: item.thumbnail,
-      firstName: item.firstName,
+      firstName: user.firstName,
     });
-  }, [navigation]);
+  }, [navigation, user.firstName]);
 
   const renderItem = useCallback(({ item, index }) => (
     <VideoThumbnail
@@ -365,7 +365,7 @@ const HomeScreen = () => {
             resizeMode="contain"
             tintColor="#fff"
           />
-          <TouchableOpacity style={styles.heroIconBtn} onPress={() => navigation.navigate('home1')} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.heroIconBtn} onPress={() => navigation.navigate('HomeSwipe', { allvideos: videos })} activeOpacity={0.7}>
             <MaterialIcons name="notifications-none" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -470,9 +470,11 @@ const HomeScreen = () => {
         {/* My Takes section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Takes</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('CameraPage')}>
-            <Text style={styles.sectionCta}>+ Record</Text>
-          </TouchableOpacity>
+          {videos.length === 0 && (
+            <TouchableOpacity onPress={() => navigation.navigate('CameraPage')}>
+              <Text style={styles.sectionCta}>+ Record</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isLoading && videos.length === 0 ? (
