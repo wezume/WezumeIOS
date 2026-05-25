@@ -141,7 +141,7 @@ const MyVideoScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.iconBtn} onPress={handleShare} activeOpacity={0.8}>
-          <MaterialIcons name="share" size={22} color={WZ.ink2} />
+          <MaterialIcons name="share" size={22} color="rgba(255,255,255,0.85)" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: WZ.card,
+    backgroundColor: 'rgba(11, 33, 56, 0.92)',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 28 : 16,
     gap: 10,
-    borderTopWidth: 1, borderTopColor: WZ.line,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)',
   },
   aiReviewBtn:      { flex: 1 },
   aiReviewGradient: {
@@ -208,10 +208,11 @@ const styles = StyleSheet.create({
   aiReviewText: { color: WZ.ink, fontSize: 15, fontWeight: '800' },
   iconBtn: {
     width: 48, height: 48, borderRadius: 14,
-    backgroundColor: WZ.bg, borderWidth: 1, borderColor: WZ.line,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center', justifyContent: 'center',
   },
-  iconBtnDelete: { backgroundColor: '#fff5f5', borderColor: '#fde8e8' },
+  iconBtnDelete: { backgroundColor: 'rgba(231,76,60,0.18)', borderColor: 'rgba(231,76,60,0.35)' },
 });
 
 export default MyVideoScreen;
