@@ -195,6 +195,7 @@ const CameraPage = () => {
 
       const response = await apiClient.post(`/api/videos/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300000, // 5 min — backend runs FFmpeg + AssemblyAI transcription synchronously
         onUploadProgress: (progressEvent) => {
           const percent = (progressEvent.loaded / progressEvent.total) * 100;
           setUploadProgress(percent);
