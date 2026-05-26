@@ -13,7 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraFormat, useCameraPermission } from 'react-native-vision-camera';
 import { BlurView } from '@react-native-community/blur';
 import Video from 'react-native-video';
 import Svg, { Circle } from 'react-native-svg';
@@ -84,6 +84,10 @@ const CameraPage = () => {
   const cameraRef = useRef(null);
   const timerInterval = useRef(null);
   const device = useCameraDevice(isFrontCamera ? 'front' : 'back');
+  const format = useCameraFormat(device, [
+    { videoResolution: { width: 854, height: 480 } },
+    { fps: 24 },
+  ]);
   
   useEffect(() => {
     if (!paramUserId) {
@@ -266,6 +270,8 @@ const CameraPage = () => {
       <Camera
         ref={cameraRef}
         device={device}
+        format={format}
+        fps={24}
         isActive={true}
         style={StyleSheet.absoluteFill}
         video={true}
