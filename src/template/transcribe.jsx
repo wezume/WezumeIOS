@@ -120,9 +120,12 @@ const TranscribeScreen = () => {
     pollRef.current = setInterval(async () => {
       try {
         const res = await apiService.getStatus(videoData.id);
-        const { status, videoReady: vr } = res.data;
+        const { status, videoReady: vr, videoUrl } = res.data;
         setProcessingStatus(status);
-        if (vr) setVideoReady(true);
+        if (vr) {
+          setVideoReady(true);
+          if (videoUrl) setVideoData(prev => ({ ...prev, uri: videoUrl }));
+        }
         if (status === 'READY') {
           setVideoReady(true);
           clearInterval(pollRef.current);

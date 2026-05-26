@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#fff' },
   grid:           { paddingHorizontal: 12, paddingBottom: 20 },
   cardWrap:       { flex: 1 / 3, padding: 3 },
-  card:           { borderRadius: 10, overflow: 'visible', backgroundColor: WZ.card },
+  card:           { borderRadius: 10, overflow: 'hidden', backgroundColor: WZ.card },
   thumb: {
     aspectRatio: 9 / 13, borderRadius: 10,
     overflow: 'hidden', backgroundColor: '#1A2F47',

@@ -426,14 +426,15 @@ const HomeScreen = () => {
 
       {/* Processing banner */}
       {videoProcessing && (
-        <View style={styles.processingBanner}>
+        <TouchableOpacity style={styles.processingBanner} onPress={() => navigation.navigate('Transcribe')} activeOpacity={0.85}>
           <ActivityIndicator size="small" color="#FFC93A" style={{ marginRight: 8 }} />
           <Text style={styles.processingBannerText}>
             {videoProcessing.status === 'SCORING'
               ? 'Calculating your AI score…'
               : 'Analysing your speech…'}
           </Text>
-        </View>
+          <MaterialIcons name="chevron-right" size={18} color="#FFC93A" style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
       )}
 
       {/* Cards section (overlapping hero) */}

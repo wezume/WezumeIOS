@@ -217,13 +217,10 @@ const CameraPage = () => {
       setUploadProgress(100);
 
       if (response.data?.id) {
-        setTimeout(() => {
-          Alert.alert('Success', 'Video uploaded successfully!');
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Transcribe', params: { userId, videos: [response.data] } }],
-          });
-        }, 2000); 
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Transcribe', params: { userId, videos: [response.data] } }],
+        });
       } else {
         throw new Error('Unexpected server response.');
       }
