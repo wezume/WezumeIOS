@@ -72,6 +72,7 @@ const TranscribeScreen = () => {
   const [videoData, setVideoData] = useState({ uri: null, transcription: '', id: null, hasVideo: false });
   const [loading, setLoading]     = useState(true);
   const [processingStatus, setProcessingStatus] = useState('PROCESSING');
+  const [videoReady, setVideoReady] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [newTranscription, setNewTranscription] = useState('');
   const pollRef = useRef(null);
@@ -89,7 +90,7 @@ const TranscribeScreen = () => {
           setVideoData({ uri: v.url, hasVideo: true, id: v.id, transcription: v.transcription || '' });
           const initial = v.processingStatus || (v.transcription ? 'SCORING' : 'PROCESSING');
           setProcessingStatus(initial);
-          // persist so HomeScreen banner can pick it up
+          setVideoReady(!!v.filePath || initial === 'READY');
           if (initial !== 'READY') {
             await AsyncStorage.setItem('pendingVideoProcessing', JSON.stringify({ videoId: v.id, status: initial }));
           }
@@ -98,7 +99,9 @@ const TranscribeScreen = () => {
           if (res.data?.videoUrl) {
             const vid = { uri: res.data.videoUrl, hasVideo: true, id: res.data.videoId, transcription: res.data.transcription || '' };
             setVideoData(vid);
-            setProcessingStatus(res.data.processingStatus || (res.data.transcription ? 'SCORING' : 'PROCESSING'));
+            const status = res.data.processingStatus || (res.data.transcription ? 'SCORING' : 'PROCESSING');
+            setProcessingStatus(status);
+            setVideoReady(status === 'READY');
           }
         }
       } catch {
@@ -117,9 +120,11 @@ const TranscribeScreen = () => {
     pollRef.current = setInterval(async () => {
       try {
         const res = await apiService.getStatus(videoData.id);
-        const { status } = res.data;
+        const { status, videoReady: vr } = res.data;
         setProcessingStatus(status);
+        if (vr) setVideoReady(true);
         if (status === 'READY') {
+          setVideoReady(true);
           clearInterval(pollRef.current);
           await AsyncStorage.removeItem('pendingVideoProcessing');
         }
@@ -180,12 +185,12 @@ const TranscribeScreen = () => {
         </View>
 
         {/* Video */}
-        {videoData.hasVideo && videoData.uri
+        {videoData.hasVideo && videoData.uri && videoReady
           ? <VideoPlayer uri={videoData.uri} />
           : (
             <View style={styles.noVideoWrap}>
               <MaterialIcons name="videocam-off" size={52} color="rgba(255,255,255,0.35)" />
-              <Text style={styles.noVideoText}>No video available</Text>
+              <Text style={styles.noVideoText}>{videoData.hasVideo ? 'Video processing…' : 'No video available'}</Text>
             </View>
           )}
 

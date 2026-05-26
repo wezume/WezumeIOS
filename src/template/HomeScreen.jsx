@@ -521,7 +521,7 @@ const HomeScreen = () => {
             style={styles.insightCard}>
             <Text style={styles.insightLabel}>AI REVIEW</Text>
             <Text style={styles.insightHeadline}>Record a take to see your AI review.</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('CameraPage')}>
+            <TouchableOpacity onPress={() => navigation.navigate('CameraPage', { userId: user.userId })}>
               <Text style={styles.insightCta}>Start now →</Text>
             </TouchableOpacity>
           </LinearGradient>
@@ -531,7 +531,7 @@ const HomeScreen = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Takes</Text>
           {videos.length === 0 && (
-            <TouchableOpacity onPress={() => navigation.navigate('CameraPage')}>
+            <TouchableOpacity onPress={() => navigation.navigate('CameraPage', { userId: user.userId })}>
               <Text style={styles.sectionCta}>+ Record</Text>
             </TouchableOpacity>
           )}
@@ -549,7 +549,7 @@ const HomeScreen = () => {
             maxToRenderPerBatch={20}
             windowSize={21}
             ListEmptyComponent={!isLoading ? (
-              <TouchableOpacity style={styles.recordTile} onPress={() => navigation.navigate('CameraPage')} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.recordTile} onPress={() => navigation.navigate('CameraPage', { userId: user.userId })} activeOpacity={0.8}>
                 <MaterialIcons name="add" size={30} color={WZ.blue} />
                 <Text style={styles.recordTileText}>Record{'\n'}Video</Text>
               </TouchableOpacity>

@@ -212,7 +212,7 @@ const CameraPage = () => {
 
       setUploadProgress(100);
 
-      if (response.data?.filePath && response.data?.id) {
+      if (response.data?.id) {
         setTimeout(() => {
           Alert.alert('Success', 'Video uploaded successfully!');
           navigation.reset({
