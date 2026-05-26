@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Linking, PermissionsAndroid, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import notifee from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -212,6 +213,7 @@ const App = () => {
 
   return (
     <GestureHandlerRootView>
+      <SafeAreaProvider>
       <OnboardingProvider>
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -254,6 +256,7 @@ const App = () => {
         </Stack.Navigator>
       </NavigationContainer>
       </OnboardingProvider>
+      </SafeAreaProvider>
       <AppUpdateChecker />
     </GestureHandlerRootView>
   );

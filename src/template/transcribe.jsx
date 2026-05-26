@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import {
   View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
   Text, ActivityIndicator, Modal, TextInput,
-  Alert, Platform, StatusBar, SafeAreaView,
+  Alert, Platform, StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Video from 'react-native-video';

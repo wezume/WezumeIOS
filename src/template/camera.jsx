@@ -203,7 +203,7 @@ const CameraPage = () => {
 
       const response = await apiClient.post(`/api/videos/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 60000, // 60s — backend runs FFmpeg compress+watermark (~5-8s) then returns; audio/transcription async
+        timeout: 300000, // 5 min — FFmpeg compress+watermark can take 1-3 min on large HEVC videos
         onUploadProgress: (progressEvent) => {
           const percent = (progressEvent.loaded / progressEvent.total) * 100;
           setUploadProgress(percent);
