@@ -19,6 +19,7 @@ import Video from 'react-native-video';
 import Svg, { Circle } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import env from './env';
 import apiClient from './api';
 
@@ -63,8 +64,9 @@ const UploadProgressCircle = ({ progress }) => {
 const CameraPage = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { userId, roleCode, college } = route.params || {};
-  
+  const { userId: paramUserId, roleCode, college } = route.params || {};
+
+  const [userId, setUserId] = useState(paramUserId ?? null);
   const [isRecording, setIsRecording] = useState(false);
   const [currentTimer, setCurrentTimer] = useState(0);
   const [onFlash, setOnFlash] = useState('off');
@@ -83,6 +85,12 @@ const CameraPage = () => {
   const timerInterval = useRef(null);
   const device = useCameraDevice(isFrontCamera ? 'front' : 'back');
   
+  useEffect(() => {
+    if (!paramUserId) {
+      AsyncStorage.getItem('userId').then(id => { if (id) setUserId(id); });
+    }
+  }, [paramUserId]);
+
   useEffect(() => {
     const checkPermissions = async () => {
       const microphoneStatus = await Camera.getMicrophonePermissionStatus();
