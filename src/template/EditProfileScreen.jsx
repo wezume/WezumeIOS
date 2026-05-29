@@ -160,7 +160,8 @@ const EditProfileScreen = () => {
       }
     };
     load();
-  }, [navigation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const autoSave = useCallback((patch) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

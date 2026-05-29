@@ -109,10 +109,10 @@ const LoginScreen = () => {
         switch (jobOption) {
           case 'Employer':
           case 'Investor':
-            navigation.navigate('RecruiterDash');
+            navigation.reset({ index: 0, routes: [{ name: 'RecruiterDash' }] });
             break;
           default:
-            navigation.navigate('HomeScreen');
+            navigation.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
             break;
         }
       }
