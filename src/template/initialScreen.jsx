@@ -10,16 +10,19 @@ const Initial = () => {
         const route = async () => {
             try {
                 const userToken = await AsyncStorage.getItem('userToken');
+                const userId   = await AsyncStorage.getItem('userId');
                 const onboarded = await AsyncStorage.getItem('onboarded');
                 const jobOption = await AsyncStorage.getItem('jobOption');
 
-                if (!onboarded) {
+                const isLoggedIn = !!(userToken || userId);
+
+                if (!onboarded && !isLoggedIn) {
                     // Brand-new user — show onboarding/landing
                     navigation.reset({ index: 0, routes: [{ name: 'LandingScreen' }] });
                     return;
                 }
 
-                if (!userToken) {
+                if (!isLoggedIn) {
                     // Returning user, logged out
                     navigation.reset({ index: 0, routes: [{ name: 'LoginScreen' }] });
                     return;

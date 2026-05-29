@@ -373,12 +373,19 @@ const HomeScreen = () => {
             const res = await apiClient.get(`/api/videos/processing-status/${pending.videoId}`);
             const { status } = res.data;
             setVideoProcessing({ videoId: pending.videoId, status });
-            if (status === 'READY') {
+            if (status === 'READY' || status === 'ERROR') {
               clearInterval(processingPollRef.current);
               await AsyncStorage.removeItem('pendingVideoProcessing');
               setVideoProcessing(null);
             }
-          } catch (_) {}
+          } catch (err) {
+            // Video deleted or not found — clear the banner
+            if (err?.response?.status === 404 || err?.response?.status === 400) {
+              clearInterval(processingPollRef.current);
+              await AsyncStorage.removeItem('pendingVideoProcessing');
+              setVideoProcessing(null);
+            }
+          }
         }, 8000);
       } catch (_) {}
     };

@@ -23,13 +23,12 @@ const STAGES = [
 ];
 
 function getStageIndex(status) {
-  if (status === 'READY')    return 3;
-  if (status === 'SCORING')  return 2;
-  return 1; // PROCESSING or unknown → transcribing
+  if (status === 'READY')   return 3;
+  if (status === 'SCORING') return 2;
+  return 1;
 }
 
 const StageRow = ({ stage, state }) => {
-  // state: 'done' | 'active' | 'pending'
   const color = state === 'done' ? '#4CD964'
               : state === 'active' ? '#FFC93A'
               : 'rgba(255,255,255,0.25)';
@@ -50,9 +49,9 @@ const stageStyles = StyleSheet.create({
 });
 
 const apiService = {
-  fetchVideo:           (userId)    => apiClient.get(`/api/videos/user/${userId}`),
-  getStatus:            (videoId)   => apiClient.get(`/api/videos/processing-status/${videoId}`),
-  updateTranscription:  (userId, t) =>
+  fetchVideo:          (userId)    => apiClient.get(`/api/videos/user/${userId}`),
+  getStatus:           (videoId)   => apiClient.get(`/api/videos/processing-status/${videoId}`),
+  updateTranscription: (userId, t) =>
     apiClient.put(`/api/videos/${userId}/transcription`,
       { transcription: t },
       { headers: { 'Content-Type': 'application/json' } }
@@ -94,6 +93,13 @@ const TranscribeScreen = () => {
           if (initial !== 'READY') {
             await AsyncStorage.setItem('pendingVideoProcessing', JSON.stringify({ videoId: v.id, status: initial }));
           }
+        } else if (route.params?.videoId) {
+          // Navigated from banner tap — load fresh from status API
+          const vId = route.params.videoId;
+          const res = await apiService.getStatus(vId);
+          setVideoData({ uri: res.data.videoUrl || null, hasVideo: !!res.data.videoUrl, id: Number(vId), transcription: res.data.transcription || '' });
+          setProcessingStatus(res.data.status || 'SCORING');
+          setVideoReady(res.data.videoReady || false);
         } else {
           const res = await apiService.fetchVideo(userId);
           if (res.data?.videoUrl) {
@@ -234,7 +240,7 @@ const TranscribeScreen = () => {
 
       </SafeAreaView>
 
-      {/* Transcript modal */}
+      {/* Edit transcript modal */}
       <Modal visible={isModalVisible} animationType="slide" transparent>
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>

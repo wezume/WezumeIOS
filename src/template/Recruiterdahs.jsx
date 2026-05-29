@@ -75,7 +75,7 @@ const RecruiterDashboard = () => {
       label: "Videos",
       icon: "work",
       colors: ["#1abc9c", "#2ecc71"],
-      onPress: () => navigation.navigate("HomeScreen", { screen: "Discover" }),
+      onPress: () => navigation.navigate("RecruiterDiscover"),
     },
     {
       label: "Advanced Search",

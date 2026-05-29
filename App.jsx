@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Linking, PermissionsAndroid, Platform } from 'react-native';
+import { Linking, PermissionsAndroid, Platform, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import notifee from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from './src/template/api';
 
 // Import Screens
 import Initial from './src/template/initialScreen';
@@ -46,33 +47,26 @@ import DetailsScreen from './src/template/DetailsScreen';
 import SuccessScreen from './src/template/SuccessScreen';
 import { OnboardingProvider } from './src/template/OnboardingContext';
 import MyVideoScreen from './src/template/MyVideoScreen';
+import DiscoverScreen from './src/template/DiscoverScreen';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
-  const navigationRef = useRef(null); // ✅ Correct way to use navigation reference
+  const navigationRef = useRef(null);
+  const [transcriptBanner, setTranscriptBanner] = useState(null); // { videoId } or null
+  const transcriptPollRef = useRef(null);
+  const bannerTimerRef    = useRef(null);
+
   useEffect(() => {
-
-    //     const clearAsyncStorage = async () => {
-    //     try {
-    //         await AsyncStorage.clear();
-    //         console.log("All data cleared from AsyncStorage");
-    //     } catch (error) {
-    //         console.error("Error clearing AsyncStorage", error);
-    //     }
-    // };
-
     /** ✅ Create notification channel */
     const createNotificationChannel = async () => {
       try {
-        console.log('Creating notification channel for the owner...');
         await notifee.createChannel({
           id: 'owner-channel',
           name: 'Owner Notifications',
-          importance: 4, // High priority for immediate attention
+          importance: 4,
           sound: 'default',
           vibrate: true,
         });
-        console.log('Owner channel created successfully!');
       } catch (error) {
         console.error('Error creating owner notification channel:', error);
       }
@@ -82,7 +76,7 @@ const App = () => {
     const requestNotificationPermission = async () => {
       try {
         if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
+          await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
             {
               title: 'Notification Permission',
@@ -90,121 +84,114 @@ const App = () => {
               buttonPositive: 'OK',
             },
           );
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('Notification permissions granted.');
-          } else {
-            console.warn('Notification permissions denied.');
-          }
         } else if (Platform.OS === 'ios') {
-          const settings = await notifee.requestPermission();
-          if (settings.authorizationStatus >= 1) {
-            console.log('Notification permissions granted.');
-          } else {
-            console.warn('Notification permissions denied.');
-          }
+          await notifee.requestPermission();
         }
       } catch (error) {
         console.error('Failed to request notification permissions:', error);
       }
     };
-    // clearAsyncStorage(); // Clear AsyncStorage for testing purposes
+
     requestNotificationPermission();
     createNotificationChannel();
 
     /** ✅ Handle deep link navigation */
     const handleDeepLink = event => {
-      console.log('Received deep link:', event.url);
-      if (event.url) {
-        handleURLNavigation(event.url);
-      }
+      if (event.url) handleURLNavigation(event.url);
     };
 
-    // ✅ Use the new approach
     const linkingListener = Linking.addEventListener('url', handleDeepLink);
+    Linking.getInitialURL().then(url => { if (url) handleURLNavigation(url); });
 
-    // ✅ Get the initial URL when app is launched from a deep link
-    Linking.getInitialURL().then(url => {
-      if (url) {
-        console.log('App opened with URL:', url);
-        handleURLNavigation(url); // ✅ Call handleURLNavigation with the initial URL
-      }
-    });
-
-    return () => {
-      linkingListener.remove(); // ✅ Clean up listener on unmount
-    };
+    return () => linkingListener.remove();
   }, []);
+
+  // ── Transcript-ready banner polling ──────────────────────────────────────────
+  // Shows a dismissable banner the first time status transitions to SCORING
+  // (meaning transcription just completed). Tapping opens the Transcribe screen.
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pendingVideoProcessing');
+        if (!raw) return;
+        const stored = JSON.parse(raw);
+        const { videoId, status: storedStatus } = stored;
+        if (!videoId) return;
+
+        const res = await apiClient.get(`/api/videos/processing-status/${videoId}`);
+        const { status } = res.data;
+
+        // Transcript just completed → show banner once
+        if (status === 'SCORING' && storedStatus === 'PROCESSING') {
+          await AsyncStorage.setItem('pendingVideoProcessing', JSON.stringify({ videoId, status: 'SCORING' }));
+          const currentRoute = navigationRef.current?.getCurrentRoute?.()?.name;
+          if (currentRoute !== 'Transcribe') {
+            showBanner(videoId);
+          }
+        } else if (status === 'READY' || status === 'ERROR') {
+          dismissBanner();
+          await AsyncStorage.removeItem('pendingVideoProcessing');
+        }
+      } catch (_) {}
+    };
+
+    transcriptPollRef.current = setInterval(poll, 8000);
+    return () => clearInterval(transcriptPollRef.current);
+  }, []);
+
+  const showBanner = (videoId) => {
+    setTranscriptBanner({ videoId });
+    clearTimeout(bannerTimerRef.current);
+    bannerTimerRef.current = setTimeout(dismissBanner, 8000); // auto-dismiss after 8s
+  };
+
+  const dismissBanner = () => {
+    clearTimeout(bannerTimerRef.current);
+    setTranscriptBanner(null);
+  };
+
+  const handleBannerTap = () => {
+    const data = transcriptBanner;
+    dismissBanner();
+    if (navigationRef.current && data) {
+      navigationRef.current.navigate('Transcribe', { videoId: data.videoId });
+    }
+  };
 
   /** ✅ Function to handle deep link navigation */
   const handleURLNavigation = (url) => {
     try {
-      // NOTE: navigationRef is now accessed from the parent component's scope (closure).
-      // A safety check ensures we only proceed if navigationRef exists.
-      if (typeof navigationRef === 'undefined' || navigationRef === null) {
-        console.error('❌ FATAL ERROR: navigationRef is not accessible in this scope.');
-        return;
-      }
+      if (typeof navigationRef === 'undefined' || navigationRef === null) return;
 
       let urlToProcess = url;
 
-      // --- STEP 1: Handle External URL with 'target' parameter ---
-      // This addresses URLs like: https://app.wezume.in/...share?target=app://...
       if (url.startsWith('http') && url.includes('?target=')) {
-        // Split the URL to isolate the value of the 'target' parameter
-        // (Using basic string manipulation as URL API might not be available in all RN environments)
         const urlParts = url.split('?target=');
         if (urlParts.length > 1) {
-          // The deep link is everything after '?target='
           urlToProcess = urlParts[1];
-          console.log(`[Extractor] Deep link extracted from target: ${urlToProcess}`);
         } else {
-          console.error('❌ Could not parse deep link from target parameter.');
           return;
         }
       }
-      // --- End Step 1 ---
 
+      if (!urlToProcess.startsWith('app://')) return;
 
-      // --- STEP 2: Process the internal deep link (app://api/videos/user/...) ---
-
-      // Ensure the link to process has the app:// prefix
-      if (!urlToProcess.startsWith('app://')) {
-        console.error('❌ Final URL to process does not start with app://', urlToProcess);
-        return;
-      }
-
-      const route = urlToProcess.replace('app://', ''); // Extract route
+      const route = urlToProcess.replace('app://', '');
       const parts = route.split('/');
 
-      // Check if the structure matches the expected pattern: api/videos/user/.../...
       if (
         parts.length >= 5 &&
         parts[0] === 'api' &&
         parts[1] === 'videos' &&
         parts[2] === 'user'
       ) {
-        // The video URL includes the 'https://' scheme and is composed of parts[3] 
-        // up to the second-to-last part (which is the video ID).
         const videoUrl = parts.slice(3, -1).join('/');
-        const videoId = parts[parts.length - 1]; // Extract video ID
-
-        console.log(`Navigating to VideoScreen with video URL: ${videoUrl} and video ID: ${videoId}`);
-
+        const videoId = parts[parts.length - 1];
         if (navigationRef.current) {
-          console.log('✅ Navigation triggered! Applying 300ms delay to ensure stack stability.');
-
-          // FIX: Apply a short delay to overcome navigation race conditions 
-          // that happen when deep links are processed before the navigation stack is fully ready.
           setTimeout(() => {
             navigationRef.current.navigate('VideoScreen', { videoUrl, videoId });
           }, 300);
-
-        } else {
-          // This means the NavigationContainer ref is null.
-          console.error('❌ Navigation reference is not initialized yet.');
         }
-      } else {
-        console.error('❌ URL format does not match expected pattern (api/videos/user/...).');
       }
     } catch (error) {
       console.error('❌ Error processing deep link:', error);
@@ -214,52 +201,93 @@ const App = () => {
   return (
     <GestureHandlerRootView>
       <SafeAreaProvider>
-      <OnboardingProvider>
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Initial" component={Initial} />
-          <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} />
-          <Stack.Screen name="LoginScreen" component={LoginScreen} />
-          <Stack.Screen name="SignupScreen" component={SignupScreen} />
-          <Stack.Screen name="HomeScreen" component={MainTabs} />
-          <Stack.Screen name="home1" component={home1} />
-          <Stack.Screen name="CameraPage" component={CameraScreen} />
-          <Stack.Screen name="profile" component={Profile} />
-          <Stack.Screen name="Transcribe" component={Transcribe} />
-          <Stack.Screen name="Account" component={Account} />
-          <Stack.Screen name="LikeScreen" component={LikeScreen} />
-          <Stack.Screen name="Filtered" component={Filtered} />
-          <Stack.Screen name="Edit" component={Edit} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Trending" component={Trending} />
-          <Stack.Screen name="Myvideos" component={Myvideos} />
-          <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
-          <Stack.Screen name="VideoScreen" component={VideoScreen} />
-          <Stack.Screen name="HomeSwipe" component={HomeSwipe} />
-          <Stack.Screen name="MySwipe" component={MySwipe} />
-          <Stack.Screen name="FilterSwipe" component={FilterSwipe} />
-          <Stack.Screen name="TrendSwipe" component={TrendSwipe} />
-          <Stack.Screen name="LikeSwipe" component={LikeSwipe} />
-          <Stack.Screen name="ScoringScreen" component={ScoringScreen} />
-          <Stack.Screen name="AnalyticScreen" component={AnalyticScreen} />
-          <Stack.Screen name="PlacemenntSignup" component={PlacemenntSignup} />
-          <Stack.Screen name="RoleSelection" component={RoleSelection} />
-          <Stack.Screen name="RoleSwipe" component={RoleSwipe} />
-          <Stack.Screen name="RecruiterDash" component={RecruiterDash} />
-          <Stack.Screen name="Test" component={Test} />
-          <Stack.Screen name="LandingScreen" component={LandingScreen} />
-          <Stack.Screen name="RoleSelectScreen" component={RoleSelectScreen} />
-          <Stack.Screen name="DetailsScreen" component={DetailsScreen} />
-          <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
-          <Stack.Screen name="MyVideoScreen" component={MyVideoScreen} />
-          <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
-        </Stack.Navigator>
-      </NavigationContainer>
-      </OnboardingProvider>
+        <OnboardingProvider>
+          <NavigationContainer ref={navigationRef}>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Initial" component={Initial} />
+              <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} />
+              <Stack.Screen name="LoginScreen" component={LoginScreen} />
+              <Stack.Screen name="SignupScreen" component={SignupScreen} />
+              <Stack.Screen name="HomeScreen" component={MainTabs} />
+              <Stack.Screen name="home1" component={home1} />
+              <Stack.Screen name="CameraPage" component={CameraScreen} />
+              <Stack.Screen name="profile" component={Profile} />
+              <Stack.Screen name="Transcribe" component={Transcribe} />
+              <Stack.Screen name="Account" component={Account} />
+              <Stack.Screen name="LikeScreen" component={LikeScreen} />
+              <Stack.Screen name="Filtered" component={Filtered} />
+              <Stack.Screen name="Edit" component={Edit} />
+              <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Trending" component={Trending} />
+              <Stack.Screen name="Myvideos" component={Myvideos} />
+              <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
+              <Stack.Screen name="VideoScreen" component={VideoScreen} />
+              <Stack.Screen name="HomeSwipe" component={HomeSwipe} />
+              <Stack.Screen name="MySwipe" component={MySwipe} />
+              <Stack.Screen name="FilterSwipe" component={FilterSwipe} />
+              <Stack.Screen name="TrendSwipe" component={TrendSwipe} />
+              <Stack.Screen name="LikeSwipe" component={LikeSwipe} />
+              <Stack.Screen name="ScoringScreen" component={ScoringScreen} />
+              <Stack.Screen name="AnalyticScreen" component={AnalyticScreen} />
+              <Stack.Screen name="PlacemenntSignup" component={PlacemenntSignup} />
+              <Stack.Screen name="RoleSelection" component={RoleSelection} />
+              <Stack.Screen name="RoleSwipe" component={RoleSwipe} />
+              <Stack.Screen name="RecruiterDash" component={RecruiterDash} />
+              <Stack.Screen name="Test" component={Test} />
+              <Stack.Screen name="LandingScreen" component={LandingScreen} />
+              <Stack.Screen name="RoleSelectScreen" component={RoleSelectScreen} />
+              <Stack.Screen name="DetailsScreen" component={DetailsScreen} />
+              <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
+              <Stack.Screen name="MyVideoScreen" component={MyVideoScreen} />
+              <Stack.Screen name="RecruiterDiscover" component={DiscoverScreen} />
+              <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </OnboardingProvider>
       </SafeAreaProvider>
       <AppUpdateChecker />
+
+      {/* Non-blocking transcript-ready banner */}
+      {!!transcriptBanner && (
+        <TouchableOpacity
+          style={appStyles.banner}
+          onPress={handleBannerTap}
+          activeOpacity={0.92}>
+          <View style={appStyles.bannerContent}>
+            <Text style={appStyles.bannerEmoji}>🎙️</Text>
+            <View style={appStyles.bannerTextWrap}>
+              <Text style={appStyles.bannerTitle}>Transcript ready!</Text>
+              <Text style={appStyles.bannerSub}>Tap to review before sharing</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={dismissBanner} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={appStyles.bannerClose}>✕</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
     </GestureHandlerRootView>
   );
 };
+
+const appStyles = StyleSheet.create({
+  banner: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 100 : 80,
+    left: 16, right: 16,
+    backgroundColor: '#0F2438',
+    borderRadius: 16,
+    paddingVertical: 14, paddingHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderColor: 'rgba(255,201,58,0.30)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35, shadowRadius: 12, elevation: 10,
+  },
+  bannerContent:  { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  bannerEmoji:    { fontSize: 24, marginRight: 12 },
+  bannerTextWrap: { flex: 1 },
+  bannerTitle:    { color: '#fff', fontSize: 14, fontWeight: '700' },
+  bannerSub:      { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 },
+  bannerClose:    { color: 'rgba(255,255,255,0.45)', fontSize: 16, fontWeight: '600', paddingLeft: 8 },
+});
 
 export default App;

@@ -193,9 +193,10 @@ const DetailsScreen = () => {
       update({ step: 'done' });
       navigation.navigate('SuccessScreen');
     } catch (err) {
+      const data = err?.response?.data;
       const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
+        (typeof data === 'object' && data !== null && (data.message || data.error)) ||
+        (typeof data === 'string' && data) ||
         err?.message ||
         'Something went wrong. Please try again.';
       Alert.alert('Sign-up failed', msg);
