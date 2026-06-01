@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from './api';
 
@@ -81,6 +81,8 @@ const VideoCard = memo(({ item, index, onPress, showScore }) => {
 
 const DiscoverScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const isRecruiterMode = route.name === 'RecruiterDiscover';
 
   const [searchText, setSearchText]       = useState('');
   const [activeCategory, setActiveCategory] = useState('For you');
@@ -211,7 +213,12 @@ const DiscoverScreen = () => {
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         style={styles.header}>
         <View style={styles.headerInner}>
-          <View>
+          {isRecruiterMode && (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <MaterialIcons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+          <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Discover</Text>
             <Text style={styles.headerSub}>Browse video resumes</Text>
           </View>
@@ -305,6 +312,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  backBtn:      { marginRight: 12, padding: 4 },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: '700', letterSpacing: 0.2 },
   headerSub:   { color: 'rgba(255,255,255,0.60)', fontSize: 11, marginTop: 1 },
   wordmark:    { height: 22, width: 86, opacity: 0.7 },
