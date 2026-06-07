@@ -183,7 +183,10 @@ const EditProfileScreen = () => {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setSaveState('saved');
-      } catch (_) { setSaveState('idle'); }
+      } catch (err) {
+        console.error('AutoSave failed:', err?.response?.status, JSON.stringify(err?.response?.data), err?.message);
+        setSaveState('idle');
+      }
     }, 1500);
   }, [userId, selectedImage]);
 
